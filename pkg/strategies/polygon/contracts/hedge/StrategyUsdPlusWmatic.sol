@@ -180,9 +180,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
             this._caseNumber6(delta);
         }
 
-        // TODO: set realHealthFactor instead useless healthFactorCurrent
-        (,,,,,uint256 healthFactorCurrent) = aavePool().getUserAccountData(address(this));
-        realHealthFactor = healthFactorCurrent;
+        (,,,,, realHealthFactor) = aavePool().getUserAccountData(address(this));
     }
 
 
@@ -225,9 +223,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
             this._caseNumber6(delta);
         }
 
-        // TODO: set realHealthFactor instead useless healthFactorCurrent
-        (,,,,,uint256 healthFactorCurrent) = aavePool().getUserAccountData(address(this));
-        realHealthFactor = healthFactorCurrent;
+        (,,,,, realHealthFactor) = aavePool().getUserAccountData(address(this));
 
         return _amount;
     }
