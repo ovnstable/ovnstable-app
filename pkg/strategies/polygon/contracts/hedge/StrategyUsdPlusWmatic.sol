@@ -82,67 +82,66 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         __Strategy_init();
     }
 
-    //TODO: clean comments
-    //    function setTokens(
-    //        address _usdc,
-    //        address _aUsdc,
-    //        address _wmatic,
-    //        address _usdPlus,
-    //        address _penToken,
-    //        address _dyst
-    //    ) external onlyAdmin {
-    //        usdc = IERC20(_usdc);
-    //        aUsdc = IERC20(_aUsdc);
-    //        wmatic = IERC20(_wmatic);
-    //        usdcDm = 10 ** IERC20Metadata(_usdc).decimals();
-    //        wmaticDm = 10 ** IERC20Metadata(_wmatic).decimals();
-    //
-    //        usdPlus = IERC20(_usdPlus);
-    //        setAsset(_usdPlus);
-    //
-    //        penToken = IERC20(_penToken);
-    //        dyst = IERC20(_dyst);
-    //
-    //    }
-    //
-    //
-    //    function setParams(
-    //        address _exchanger,
-    //        address _dystRewards,
-    //        address _dystVault,
-    //        address _dystRouter,
-    //        address _penProxy,
-    //        address _penLens
-    //    ) external onlyAdmin {
-    //
-    //        dystRewards = IDystopiaLP(_dystRewards);
-    //        dystVault = IDystopiaLP(_dystVault);
-    //        dystRouter = IDystopiaRouter(_dystRouter);
-    //
-    //        penProxy = IUserProxy(_penProxy);
-    //        penLens = IPenLens(_penLens);
-    //
-    //        exchange = IExchange(_exchanger);
-    //    }
-    //
-    //    function setAaveParams(
-    //        address _aavePoolAddressesProvider,
-    //        address _oracleUsdc,
-    //        address _oracleWmatic,
-    //        uint256 _liquidationThreshold,
-    //        uint256 _healthFactor,
-    //        uint256 _balancingDelta
-    //    ) external onlyAdmin {
-    //
-    //        aavePoolAddressesProvider = IPoolAddressesProvider(_aavePoolAddressesProvider);
-    //        oracleUsdc = IPriceFeed(_oracleUsdc);
-    //        oracleWmatic = IPriceFeed(_oracleWmatic);
-    //
-    //        liquidationThreshold = _liquidationThreshold * 10 ** 15;
-    //        healthFactor = _healthFactor * 10 ** 15;
-    //        realHealthFactor = 0;
-    //        balancingDelta = _balancingDelta * 10 ** 15;
-    //    }
+    function setTokens(
+        address _usdc,
+        address _aUsdc,
+        address _wmatic,
+        address _usdPlus,
+        address _penToken,
+        address _dyst
+    ) external onlyAdmin {
+        usdc = IERC20(_usdc);
+        aUsdc = IERC20(_aUsdc);
+        wmatic = IERC20(_wmatic);
+        usdcDm = 10 ** IERC20Metadata(_usdc).decimals();
+        wmaticDm = 10 ** IERC20Metadata(_wmatic).decimals();
+
+        usdPlus = IERC20(_usdPlus);
+        setAsset(_usdPlus);
+
+        penToken = IERC20(_penToken);
+        dyst = IERC20(_dyst);
+
+    }
+
+
+    function setParams(
+        address _exchanger,
+        address _dystRewards,
+        address _dystVault,
+        address _dystRouter,
+        address _penProxy,
+        address _penLens
+    ) external onlyAdmin {
+
+        dystRewards = IDystopiaLP(_dystRewards);
+        dystVault = IDystopiaLP(_dystVault);
+        dystRouter = IDystopiaRouter(_dystRouter);
+
+        penProxy = IUserProxy(_penProxy);
+        penLens = IPenLens(_penLens);
+
+        exchange = IExchange(_exchanger);
+    }
+
+    function setAaveParams(
+        address _aavePoolAddressesProvider,
+        address _oracleUsdc,
+        address _oracleWmatic,
+        uint256 _liquidationThreshold,
+        uint256 _healthFactor,
+        uint256 _balancingDelta
+    ) external onlyAdmin {
+
+        aavePoolAddressesProvider = IPoolAddressesProvider(_aavePoolAddressesProvider);
+        oracleUsdc = IPriceFeed(_oracleUsdc);
+        oracleWmatic = IPriceFeed(_oracleWmatic);
+
+        liquidationThreshold = _liquidationThreshold * 10 ** 15;
+        healthFactor = _healthFactor * 10 ** 15;
+        realHealthFactor = 0;
+        balancingDelta = _balancingDelta * 10 ** 15;
+    }
 
     function _stake(uint256 _amount) internal override {
 
