@@ -181,7 +181,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         }
 
         // TODO: set realHealthFactor instead useless healthFactorCurrent
-        (,,,,,uint256 healthFactorCurrent) = IPool(_aavePool()).getUserAccountData(address(this));
+        (,,,,,uint256 healthFactorCurrent) = aavePool().getUserAccountData(address(this));
         realHealthFactor = healthFactorCurrent;
     }
 
@@ -226,15 +226,14 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         }
 
         // TODO: set realHealthFactor instead useless healthFactorCurrent
-        (,,,,,uint256 healthFactorCurrent) = _aavePool().getUserAccountData(address(this));
+        (,,,,,uint256 healthFactorCurrent) = aavePool().getUserAccountData(address(this));
         realHealthFactor = healthFactorCurrent;
 
         return _amount;
     }
 
-    //TODO: remove underscore if public
-    function _aavePool() public returns (IPool aavePool){
-        aavePool = IPool(AaveBorrowLibrary.getAavePool(address(aavePoolAddressesProvider), E_MODE_CATEGORY_ID));
+    function aavePool() public view returns (IPool){
+        return IPool(AaveBorrowLibrary.getAavePool(address(aavePoolAddressesProvider)));
     }
 
     function _updateEMode() internal {
@@ -245,8 +244,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     function balances() external view override returns (BalanceItem[] memory){
 
         // debt base (USD) convert to Wmatic amount
-        //TODO: use _aavePool method if same
-        (, uint256 debtBase,,,,) = IPool(AaveBorrowLibrary.getAavePool(address(aavePoolAddressesProvider))).getUserAccountData(address(this));
+        (, uint256 debtBase,,,,) = aavePool().getUserAccountData(address(this));
         uint256 aaveWmatic = AaveBorrowLibrary.convertUsdToTokenAmount(debtBase, wmaticDm, uint256(oracleWmatic.latestAnswer()));
         uint256 usdcWmatic = AaveBorrowLibrary.convertUsdToTokenAmount(debtBase, usdcDm, uint256(oracleUsdc.latestAnswer()));
 
@@ -284,7 +282,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
 
 
         // debt base (USD) convert to Wmatic amount
-        (, uint256 debtBase,,,,) = IPool(AaveBorrowLibrary.getAavePool(address(aavePoolAddressesProvider))).getUserAccountData(address(this));
+        (, uint256 debtBase,,,,) = aavePool().getUserAccountData(address(this));
         uint256 aaveWmatic = AaveBorrowLibrary.convertUsdToTokenAmount(debtBase, wmaticDm, uint256(oracleWmatic.latestAnswer()));
 
         if (aaveWmatic < poolWmatic) {
@@ -357,7 +355,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
             this._caseNumber6(delta);
         }
 
-        (,,,,,uint256 healthFactorCurrent) = _aavePool().getUserAccountData(address(this));
+        (,,,,,uint256 healthFactorCurrent) = aavePool().getUserAccountData(address(this));
         realHealthFactor = healthFactorCurrent;
 
         return healthFactorCurrent;
@@ -397,8 +395,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         // console.log("aaveBorrowAndPoolMaticPercent", aaveBorrowAndPoolMaticPercent);
         // console.log("poolUsdpPercent", poolUsdpPercent);
 
-        // TODO: use method _aavePool if same
-        (uint256 aaveCollateralUsd, uint256 aaveBorrowUsd,,,,) = IPool(AaveBorrowLibrary.getAavePool(address(aavePoolAddressesProvider))).getUserAccountData(address(this));
+        (uint256 aaveCollateralUsd, uint256 aaveBorrowUsd,,,,) = aavePool().getUserAccountData(address(this));
         uint256 poolWmatic;
         uint256 poolUsdPlus;
 

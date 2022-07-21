@@ -187,7 +187,7 @@ library UsdPlusWmaticLibrary {
             self.usdcDm(),
             uint256(self.oracleUsdc().latestAnswer())
         );
-        IPool aave = self._aavePool();
+        IPool aave = self.aavePool();
 
         {
             address userProxyThis = self.penLens().userProxyByAccount(address(self));
@@ -203,8 +203,8 @@ library UsdPlusWmaticLibrary {
     }
 
     function _repayAllWmatic(StrategyUsdPlusWmatic self) public {
-        self.wmatic().approve(address(self._aavePool()), self.wmatic().balanceOf(address(self)));
-        self._aavePool().repay(
+        self.wmatic().approve(address(self.aavePool()), self.wmatic().balanceOf(address(self)));
+        self.aavePool().repay(
             address(self.wmatic()),
             self.wmatic().balanceOf(address(self)),
             self.INTEREST_RATE_MODE(),
@@ -218,12 +218,12 @@ library UsdPlusWmaticLibrary {
             self.usdcDm(),
             uint256(self.oracleUsdc().latestAnswer())
         );
-        self._aavePool().withdraw(address(self.usdc()), aaveUsdc, address(self));
+        self.aavePool().withdraw(address(self.usdc()), aaveUsdc, address(self));
     }
 
     function _supplyCurrentUsdcAmount(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.Delta memory delta, uint256 amount) public {
-        self.usdc().approve(address(self._aavePool()), amount);
-        self._aavePool().supply(address(self.usdc()), amount, address(this), self.REFERRAL_CODE());
+        self.usdc().approve(address(self.aavePool()), amount);
+        self.aavePool().supply(address(self.usdc()), amount, address(this), self.REFERRAL_CODE());
 
     }
 
@@ -233,7 +233,7 @@ library UsdPlusWmaticLibrary {
             self.wmaticDm(),
             uint256(self.oracleWmatic().latestAnswer())
         );
-        self._aavePool().borrow(
+        self.aavePool().borrow(
             address(self.wmatic()),
             aaveMatic,
             self.INTEREST_RATE_MODE(),
