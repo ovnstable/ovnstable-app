@@ -308,10 +308,12 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
             (uint256 amount0Current, uint256 amount1Current,) = dystVault.getReserves();
             uint256 dystUsdpMatic = amount1Current * 10 ** 20 / amount0Current;
 
-            // console.log(chainlinkUsdUsdc);
-            // console.log(chainlinkUsdMatic);
-            // console.log(dystUsdpMatic);
+            console.log("-----------------");
+            console.log("chainlinkUsdUsdc  ", chainlinkUsdUsdc);
+            console.log("chainlinkUsdMatic ", chainlinkUsdMatic);
+            console.log("dystUsdpMatic     ", dystUsdpMatic);
 
+            //TODO: calc digits, is percent with extra 2 digits?
             aaveCollateralPercent = (healthFactor * chainlinkUsdUsdc * chainlinkUsdMatic * 10 ** 18) / (healthFactor * chainlinkUsdUsdc * chainlinkUsdMatic + liquidationThreshold * dystUsdpMatic * 10 ** 8);
             aaveBorrowAndPoolMaticPercent = aaveCollateralPercent * liquidationThreshold / healthFactor;
 
@@ -352,14 +354,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
             require(NAV >= amount, "Not enough NAV for payback");
             NAV -= amount;
         }
-         console.log("NAV              ", NAV);
-
-        console.log("-----------------");
-        console.log("aaveCollateralUsdNeeded ", NAV * aaveCollateralPercent / 10 ** 18);
-        console.log("aaveBorrowUsdNeeded     ", NAV * aaveBorrowAndPoolMaticPercent / 10 ** 18);
-        console.log("poolMaticUsdNeeded      ", NAV * aaveBorrowAndPoolMaticPercent / 10 ** 18);
-        console.log("poolUsdpUsdNeeded       ", NAV * poolUsdpPercent / 10 ** 18);
-        console.log("-----------------");
+        console.log("NAV              ", NAV);
 
         // prepare context variable
         ctx = BalanceContext(
@@ -374,6 +369,13 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         uint256 __poolUsdpNew = NAV * poolUsdpPercent / 10 ** 18;
         uint256 __aaveBorrowAndPoolMaticNew = NAV * aaveBorrowAndPoolMaticPercent / 10 ** 18;
         uint256 __aaveCollateralNew = NAV * aaveCollateralPercent / 10 ** 18;
+
+        console.log("-----------------");
+        console.log("aaveCollateralUsdNeeded ", __aaveCollateralNew);
+        console.log("aaveBorrowUsdNeeded     ", __aaveBorrowAndPoolMaticNew);
+        console.log("poolMaticUsdNeeded      ", __aaveBorrowAndPoolMaticNew);
+        console.log("poolUsdpUsdNeeded       ", __poolUsdpNew);
+        console.log("-----------------");
 
         // set cases and deltas
         if (aaveCollateralUsd > __aaveCollateralNew) {

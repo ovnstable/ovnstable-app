@@ -128,20 +128,23 @@ function stakeUnstake(strategyParams, network, assetAddress, values, runStrategy
                     try {
                         let assetValue = toAsset(stakeValue);
                         VALUE = new BigNumber(assetValue);
-                        DELTA = VALUE.times(new BigNumber(deltaPercent)).div(100);
+                        DELTA = VALUE.multipliedBy(new BigNumber(deltaPercent)).div(100);
 
                         await asset.connect(account).transfer(recipient.address, assetValue);
 
-                        let balanceAssetBefore = new BigNumber(await asset.balanceOf(recipient.address).toString());
+                        let balanceAssetBefore = new BigNumber((await asset.balanceOf(recipient.address)).toString());
                         expectedNetAsset = new BigNumber((await strategy.netAssetValue()).toString()).plus(VALUE);
 
                         await asset.connect(recipient).transfer(strategy.address, assetValue);
                         await strategy.connect(recipient).stake(assetValue);
 
-                        let balanceAssetAfter = new BigNumber(await asset.balanceOf(recipient.address).toString());
+                        let balanceAssetAfter = new BigNumber((await asset.balanceOf(recipient.address)).toString());
 
                         balanceAsset = balanceAssetBefore.minus(balanceAssetAfter);
-                        netAssetValueCheck = new BigNumber(await strategy.netAssetValue()).toString();
+                        console.log(`balanceAssetAfter: ${balanceAssetAfter}`)
+                        console.log(`balanceAsset: ${balanceAsset}`)
+                        netAssetValueCheck = new BigNumber((await strategy.netAssetValue()).toString());
+                        console.log(`netAssetValueCheck: ${netAssetValueCheck}`)
                     } catch (e) {
                         console.log(e)
                         throw e;
