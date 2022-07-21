@@ -171,7 +171,7 @@ function stakeUnstake(strategyParams, network, assetAddress, values, runStrategy
                     let DELTA;
 
                     let netAssetValueCheck;
-                    let liquidationValueCheck;
+                    // let liquidationValueCheck;
 
                     sharedBeforeEach(`Unstake ${unstakeValue}`, async () => {
 
@@ -182,7 +182,7 @@ function stakeUnstake(strategyParams, network, assetAddress, values, runStrategy
                         let balanceAssetBefore = new BigNumber((await asset.balanceOf(recipient.address)).toString());
 
                         expectedNetAsset = new BigNumber((await strategy.netAssetValue()).toString()).minus(VALUE);
-                        expectedLiquidation = new BigNumber((await strategy.liquidationValue()).toString()).minus(VALUE);
+                        // expectedLiquidation = new BigNumber((await strategy.liquidationValue()).toString()).minus(VALUE);
 
                         await strategy.connect(recipient).unstake( assetValue, recipient.address);
 
@@ -191,7 +191,7 @@ function stakeUnstake(strategyParams, network, assetAddress, values, runStrategy
                         balanceAsset = balanceAssetAfter.minus(balanceAssetBefore);
 
                         netAssetValueCheck = new BigNumber((await strategy.netAssetValue()).toString());
-                        liquidationValueCheck = new BigNumber((await strategy.liquidationValue()).toString());
+                        // liquidationValueCheck = new BigNumber((await strategy.liquidationValue()).toString());
 
                     });
 
@@ -203,9 +203,9 @@ function stakeUnstake(strategyParams, network, assetAddress, values, runStrategy
                         greatLess(netAssetValueCheck, expectedNetAsset, DELTA);
                     });
 
-                    it(`LiquidationValue asset is in range`, async function () {
-                        greatLess(liquidationValueCheck, expectedLiquidation, DELTA);
-                    });
+                    // it(`LiquidationValue asset is in range`, async function () {
+                    //     greatLess(liquidationValueCheck, expectedLiquidation, DELTA);
+                    // });
 
                 });
 
