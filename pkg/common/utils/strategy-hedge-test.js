@@ -131,7 +131,7 @@ function stakeUnstake(strategyParams, network, assetAddress, values, runStrategy
                     let assetValue = toAsset(stakeValue);
                     VALUE = new BigNumber(assetValue);
                     DELTA = VALUE.times(new BigNumber(deltaPercent)).div(100);
-                    
+
                     await asset.transfer(recipient.address, assetValue);
 
                     let balanceAssetBefore = new BigNumber((await asset.balanceOf(recipient.address)).toString());
@@ -176,7 +176,7 @@ function stakeUnstake(strategyParams, network, assetAddress, values, runStrategy
                     let liquidationValueCheck;
 
                     sharedBeforeEach(`Unstake ${unstakeValue}`, async () => {
-                    
+
                         let assetValue = toAsset(unstakeValue);
                         VALUE = new BigNumber(assetValue);
                         DELTA = VALUE.times(new BigNumber(deltaPercent)).div(100);
@@ -267,7 +267,7 @@ function claimRewards(strategyParams, network, assetAddress, values, runStrategy
                 let balanceAsset;
 
                 sharedBeforeEach(`Rewards ${stakeValue}`, async () => {
-                
+
                     let assetValue = toAsset(stakeValue);
 
                     await asset.transfer(recipient.address, assetValue);
@@ -364,7 +364,7 @@ function healthFactorBalance(strategyParams, network, assetAddress, values, runS
                 sharedBeforeEach(`Stake ${stakeValue}`, async () => {
 
                     let assetValue = toAsset(stakeValue);
-                    
+
                     await asset.transfer(recipient.address, assetValue);
 
                     await asset.connect(recipient).transfer(strategy.address, assetValue);
@@ -375,7 +375,7 @@ function healthFactorBalance(strategyParams, network, assetAddress, values, runS
                     desiredHealthFactor1 = new BigNumber((await strategy.healthFactor()).toString());
                     realHealthFactor1 = new BigNumber((await strategy.realHealthFactor()).toString());
 
-                    desiredHealthFactor2 = desiredHealthFactor1.times(100 + 1).div(100).div(new BigNumber(10).pow(15)).times(new BigNumber(10).pow((15));
+                    desiredHealthFactor2 = desiredHealthFactor1.times(100 + 1).div(100).div(new BigNumber(10).pow(15)).times(new BigNumber(10).pow((15)));
                     await strategy.connect(recipient).setHealthFactor(desiredHealthFactor2.div(new BigNumber(10).pow(15)).toFixed());
                     await strategy.connect(recipient).healthFactorBalance();
                     await strategy.grepRealHealthFactor();
@@ -428,7 +428,7 @@ function greatLess(value, expected, delta) {
     let gte = value.gte(minValue);
 
     let valueNumber = value.div(new BigNumber(10).pow(6)).toFixed();
-    let minValueNumber = minValue.div(new BigNumber(10).pow((6)).toFixed();
+    let minValueNumber = minValue.div(new BigNumber(10).pow(6)).toFixed();
     let maxValueNumber = maxValue.div(new BigNumber(10).pow(6)).toFixed();
 
     let minSub = (value.minus(minValue)).div(new BigNumber(10).pow(6)).toFixed();
