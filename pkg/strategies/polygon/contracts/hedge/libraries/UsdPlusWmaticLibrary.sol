@@ -12,6 +12,11 @@ import "hardhat/console.sol";
 library UsdPlusWmaticLibrary {
 
 
+    /**
+     * Add liquidity to dyst pool:
+     * [wmatic, usdPlus] -> dyst lpToken
+     * + stake lpToken to Penrose
+     */
     function _addLiquidity(StrategyUsdPlusWmatic self, uint256 wmaticAmount, uint256 usdPlusAmount) public {
 
         self.usdPlus().approve(address(self.dystRouter()), type(uint256).max);
@@ -35,7 +40,10 @@ library UsdPlusWmaticLibrary {
         self.penProxy().depositLpAndStake(address(self.dystVault()), lpTokenBalance);
     }
 
-
+    /**
+     * Remove liquidity from dyst pool:
+     * dyst lpToken -> [wmatic, usdPlus]
+     */
     function _removeLiquidity(StrategyUsdPlusWmatic self, uint256 amountLp) public returns (uint256 amountWmatic, uint256 amountUsdPlus) {
 
         (uint256 amountLiq0, uint256 amountLiq1) = _getLiquidityByLp(self, amountLp);
@@ -59,7 +67,11 @@ library UsdPlusWmaticLibrary {
         return amountLp;
     }
 
-
+    /**
+     * Swap all wmatics to usdPluses on Dystopia and then buy usdPluses by all usdcs
+     * wmatic -> usdPlus
+     * usdc -> usdPlus
+     */
     function _convertTokensToUsdPlus(StrategyUsdPlusWmatic self) public {
 
         IERC20 wmatic = self.wmatic();
@@ -145,7 +157,10 @@ library UsdPlusWmaticLibrary {
         return lpBalance;
     }
 
-
+    /**
+     * usdPlus -> wmatic
+     * [wmatic, usdPlus] -> dyst lpToken (by _addLiquidity)
+     */
     function _pushAllUsdpToPool(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.BalanceContext  memory ctx) public {
 
         IERC20 usdPlus = self.usdPlus();
@@ -181,7 +196,13 @@ library UsdPlusWmaticLibrary {
         _addLiquidity(self, wmaticAmount, usdPlusAmount);
     }
 
+    /**
+     * Remove liquidity from aave debt:
+     * unstake lpToken from Penrose
+     * lpToken -> [wmatic, usdPlus] (by _removeLiquidity)
+     */
     function _removeLiq(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.BalanceContext  memory ctx) public {
+        // update usdPlus amount by current oracle usdc price
         ctx.poolUsdpUsdDelta = AaveBorrowLibrary.convertUsdToTokenAmount(
             ctx.poolUsdpUsdDelta,
             self.usdcDm(),
@@ -193,24 +214,31 @@ library UsdPlusWmaticLibrary {
             address stakingAddress = self.penLens().stakingRewardsByDystPool(address(self.dystVault()));
             uint256 balanceLp = IERC20(stakingAddress).balanceOf(userProxyThis);
             (, uint256 poolUsdPlus) = _getLiquidityByLp(self, balanceLp);
-            uint256 lpforusdp = ctx.poolUsdpUsdDelta * balanceLp / poolUsdPlus;
+            uint256 lpForUsdp = ctx.poolUsdpUsdDelta * balanceLp / poolUsdPlus;
 
-            self.penProxy().unstakeLpAndWithdraw(address(self.dystVault()), lpforusdp);
-            self.dystVault().approve(address(self.dystRouter()), lpforusdp);
-            _removeLiquidity(self, lpforusdp);
+            self.penProxy().unstakeLpAndWithdraw(address(self.dystVault()), lpForUsdp);
+            self.dystVault().approve(address(self.dystRouter()), lpForUsdp);
+            _removeLiquidity(self, lpForUsdp);
         }
     }
 
+    /**
+     * wmatic -> (back to aave)
+     */
     function _repayAllWmatic(StrategyUsdPlusWmatic self) public {
-        self.wmatic().approve(address(self.aavePool()), self.wmatic().balanceOf(address(self)));
+        uint256 wmaticBalance = self.wmatic().balanceOf(address(self));
+        self.wmatic().approve(address(self.aavePool()), wmaticBalance);
         self.aavePool().repay(
             address(self.wmatic()),
-            self.wmatic().balanceOf(address(self)),
+            wmaticBalance,
             self.INTEREST_RATE_MODE(),
             address(self)
         );
     }
 
+    /**
+     * aUsdc -> usdc
+     */
     function _withdrawNeededUsdcInUsd(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.BalanceContext  memory ctx) public {
         uint256 aaveUsdc = AaveBorrowLibrary.convertUsdToTokenAmount(
             ctx.aaveCollateralUsdNeeded,
@@ -220,18 +248,27 @@ library UsdPlusWmaticLibrary {
         self.aavePool().withdraw(address(self.usdc()), aaveUsdc, address(self));
     }
 
+    /**
+     * usdc -> aUsdc
+     */
     function _supplyCurrentUsdcAmount(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.BalanceContext  memory ctx, uint256 amount) public {
         self.usdc().approve(address(self.aavePool()), amount);
         self.aavePool().supply(address(self.usdc()), amount, address(this), self.REFERRAL_CODE());
-
     }
 
     function _borrowNeededWmatic(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.BalanceContext  memory ctx) public {
+
+        console.log("----------------- _borrowNeededWmatic");
+        console.log("ctx.aaveBorrowUsdNeeded       ", ctx.aaveBorrowUsdNeeded);
+
+        // calc amount
         uint256 aaveMatic = AaveBorrowLibrary.convertUsdToTokenAmount(
             ctx.aaveBorrowUsdNeeded,
             self.wmaticDm(),
             uint256(self.oracleWmatic().latestAnswer())
         );
+        console.log("aaveMatic                     ", aaveMatic);
+        // borrow wmatics
         self.aavePool().borrow(
             address(self.wmatic()),
             aaveMatic,
@@ -241,6 +278,10 @@ library UsdPlusWmaticLibrary {
         );
     }
 
+    /**
+     * Swap on dystopia
+     * usdPlus -> _to
+     */
     function _swapUspPlusToToken(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.BalanceContext  memory ctx, address _to, uint256 amount, bool stable) public {
         DystopiaLibrary._swap(
             self.dystRouter(),
@@ -252,6 +293,10 @@ library UsdPlusWmaticLibrary {
         );
     }
 
+    /**
+     * Swap on dystopia
+     * usdPlus -> wmatic
+     */
     function _swapUsdcToWmatic(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.BalanceContext  memory ctx, uint256 amount) public {
         DystopiaLibrary._swap(
             self.dystRouter(),

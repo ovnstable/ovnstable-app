@@ -144,6 +144,7 @@ function stakeUnstake(strategyParams, network, assetAddress, values, runStrategy
                         netAssetValueCheck = new BigNumber(await strategy.netAssetValue()).toString();
                     } catch (e) {
                         console.log(e)
+                        throw e;
                     }
 
                 });
@@ -296,6 +297,8 @@ function claimRewards(strategyParams, network, assetAddress, values, runStrategy
 
 
 function greatLess(value, expected, delta) {
+
+    value = new BigNumber(value.toString());
 
     let maxValue = expected.plus(delta);
     let minValue = expected.minus(delta);

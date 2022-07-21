@@ -26,7 +26,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     using UsdPlusWmaticLibrary for StrategyUsdPlusWmatic;
 
     uint8 public constant E_MODE_CATEGORY_ID = 0;
-    uint256 public constant INTEREST_RATE_MODE = 2;
+    uint256 public constant INTEREST_RATE_MODE = 2; // InterestRateMode.VARIABLE
     uint16 public constant REFERRAL_CODE = 0;
     uint256 public constant BASIS_POINTS_FOR_STORAGE = 100; // 1%
     uint256 public constant BASIS_POINTS_FOR_SLIPPAGE = 400; // 4%
@@ -353,17 +353,12 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         }
         // console.log("NAV", NAV);
 
-
-        // console.log("aaveCollateralUsdNeeded", NAV*aaveCollateralPercent/10**18);
-        // console.log("aaveBorrowUsdNeeded", NAV*aaveBorrowAndPoolMaticPercent/10**18);
-        // console.log("poolMaticUsdNeeded", NAV*aaveBorrowAndPoolMaticPercent/10**18);
-        // console.log("poolUsdpUsdNeeded", NAV*poolUsdpPercent/10**18);
-        console.log("");
-        // console.log("aaveCollateralUsdDelta", NAV*aaveCollateralPercent/10**18 - aaveCollateralUsd);
-        // console.log("aaveBorrowUsdDelta", aaveBorrowUsd - NAV*aaveBorrowAndPoolMaticPercent/10**18);
-        // console.log("poolMaticUsdDelta", poolMaticUsd - NAV*aaveBorrowAndPoolMaticPercent/10**18);
-        // console.log("poolUsdpUsdDelta", poolUsdpUsd - NAV*poolUsdpPercent/10**18);
-        // console.log("");
+        console.log("-----------------");
+        console.log("aaveCollateralUsdNeeded ", NAV * aaveCollateralPercent / 10 ** 18);
+        console.log("aaveBorrowUsdNeeded     ", NAV * aaveBorrowAndPoolMaticPercent / 10 ** 18);
+        console.log("poolMaticUsdNeeded      ", NAV * aaveBorrowAndPoolMaticPercent / 10 ** 18);
+        console.log("poolUsdpUsdNeeded       ", NAV * poolUsdpPercent / 10 ** 18);
+        console.log("-----------------");
 
         // prepare context variable
         ctx = BalanceContext(
@@ -427,5 +422,12 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
                 }
             }
         }
+
+        console.log("ctx.caseNumber", ctx.caseNumber);
+        console.log("ctx.poolUsdpUsdDelta        ", ctx.poolUsdpUsdDelta);
+        console.log("ctx.aaveBorrowUsdNeeded     ", ctx.aaveBorrowUsdNeeded);
+        console.log("ctx.aaveCollateralUsdNeeded ", ctx.aaveCollateralUsdNeeded);
+        console.log("-----------------");
+
     }
 }
