@@ -24,6 +24,6 @@ console.log(`Run tests [${arrays.map(value => value.name)}]`);
 describe("Polygon", function () {
 
     arrays.forEach(value => {
-        strategyTest(value, 'POLYGON', POLYGON.usdc, ()=>{});
+        strategyTest(value, 'POLYGON', POLYGON.usdPlus, ()=>{});
     })
 });

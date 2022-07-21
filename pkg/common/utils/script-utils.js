@@ -124,6 +124,43 @@ async function showPlatform(platform, blocknumber) {
     console.table(items);
 }
 
+async function showHedgeM2M() {
+
+    let wallet = await initWallet();
+
+    let usdPlus = await getContract('UsdPlusToken', 'polygon');
+    let rebase = await getContract('RebaseTokenUsdPlusWmatic', 'polygon_dev');
+    let strategy = await getContract('StrategyUsdPlusWmatic', 'polygon_dev');
+
+    console.log('User balances:')
+    console.log("Rebase:       " + fromUSDC(await rebase.balanceOf(wallet.address)))
+    console.log("usdPlus:      " + fromUSDC(await usdPlus.balanceOf(wallet.address)))
+    console.log('')
+
+    console.log('ETS balances:')
+    console.log('Total Rebase: ' + fromUSDC(await rebase.totalSupply()));
+    console.log('Total NAV:    ' + fromUSDC(await strategy.netAssetValue()));
+    console.log('HF:           ' + fromUSDC(await strategy.currentHealthFactor()));
+    console.log('Liq index:    ' + await rebase.liquidityIndex());
+
+    let items = await strategy.balances();
+
+    let arrays = [];
+    for (let i = 0; i < items.length; i++) {
+
+        let item = items[i];
+
+        arrays.push({
+            name: item[0],
+            amountUSDC: fromUSDC(item[1].toString()),
+            amount: fromE18(item[2].toString()),
+            borrowed: item[3].toString()
+        })
+
+    }
+
+    console.table(arrays);
+}
 
 async function showM2M(blocknumber) {
 
@@ -219,7 +256,13 @@ async function showM2M(blocknumber) {
 
 async function getPrice(){
     let value = process.env.GAS_PRICE.toString() + "000000000";
-    return {maxFeePerGas: value, maxPriorityFeePerGas: value};
+
+    let params = {maxFeePerGas: value, maxPriorityFeePerGas: value};
+
+    if (process.env.ETH_NETWORK === 'POLYGON')
+        params.gasLimit = 15000000;
+
+    return params;
 }
 
 
@@ -347,6 +390,7 @@ async function checkTimeLockBalance(){
 module.exports = {
     initWallet: initWallet,
     showM2M: showM2M,
+    showHedgeM2M: showHedgeM2M,
     showPlatform: showPlatform,
     getPrice: getPrice,
     getContract: getContract,
