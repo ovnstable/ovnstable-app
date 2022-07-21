@@ -187,7 +187,6 @@ library UsdPlusWmaticLibrary {
             self.usdcDm(),
             uint256(self.oracleUsdc().latestAnswer())
         );
-        IPool aave = self.aavePool();
 
         {
             address userProxyThis = self.penLens().userProxyByAccount(address(self));
