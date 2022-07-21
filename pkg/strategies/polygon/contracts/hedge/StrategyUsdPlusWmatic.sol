@@ -144,6 +144,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     }
 
     function _stake(uint256 _amount) internal override {
+        _updateEMode();
 
         (uint256 caseNumber, uint256 aaveCollateralUsdNeeded, uint256 aaveBorrowUsdNeeded, uint256 poolUsdpUsdDelta) = getDeltas(1, _amount);
 
@@ -188,6 +189,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     function _unstake(
         uint256 _amount
     ) internal override returns (uint256) {
+        _updateEMode();
 
         (uint256 caseNumber, uint256 aaveCollateralUsdNeeded, uint256 aaveBorrowUsdNeeded, uint256 poolUsdpUsdDelta) = getDeltas(2, _amount);
 
@@ -233,6 +235,10 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     //TODO: remove underscore if public
     function _aavePool() public returns (IPool aavePool){
         aavePool = IPool(AaveBorrowLibrary.getAavePool(address(aavePoolAddressesProvider), E_MODE_CATEGORY_ID));
+    }
+
+    function _updateEMode() internal {
+        AaveBorrowLibrary.getAavePool(address(aavePoolAddressesProvider), E_MODE_CATEGORY_ID);
     }
 
 
@@ -314,6 +320,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     }
 
     function _balance() internal override returns (uint256) {
+        _updateEMode();
 
         (uint256 caseNumber, uint256 aaveCollateralUsdNeeded, uint256 aaveBorrowUsdNeeded, uint256 poolUsdpUsdDelta) = getDeltas(0, 0);
 
