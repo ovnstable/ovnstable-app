@@ -270,7 +270,7 @@ library UsdPlusWmaticLibrary {
             self.wmaticDm(),
             uint256(self.oracleWmatic().latestAnswer())
         );
-        console.log("aaveMatic                     ", borrowWMaticAmount);
+        console.log("borrowWMaticAmount            ", borrowWMaticAmount);
         // borrow wmatics
         self.aavePool().borrow(
             address(self.wmatic()),
@@ -391,13 +391,15 @@ library UsdPlusWmaticLibrary {
     }
 
 
+    /**
+     * Put to collateral: usdc -> aUsdc
+     * Borrow wmatics: (aave borrow) -> wmatic
+     * Feed pool: [wmatic, usdPlus] -> dyst lpToken
+     */
     function _caseNumber6(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.BalanceContext  memory ctx) public {
 
-        _borrowNeededWmatic(self, ctx);
-
-        _convertTokensToUsdPlus(self);
-
-        // usd+ -> usdc
+        // 1. usd+ -> usdc
+        //TODO: why aaveCollateralUsdNeeded divided by 100?
         _swapUspPlusToToken(
             self,
             ctx,
@@ -405,7 +407,13 @@ library UsdPlusWmaticLibrary {
             ctx.aaveCollateralUsdNeeded / 100,
             true
         );
+        // usdc -> aUsdc
         _supplyCurrentUsdcAmount(self, ctx, self.usdc().balanceOf(address(self)));
+
+        // 2. (aave) -> wmatic
+        _borrowNeededWmatic(self, ctx);
+
+        // 3. [wmatic, usdPlus] -> dyst lpToken
         _pushAllUsdpToPool(self, ctx);
     }
 

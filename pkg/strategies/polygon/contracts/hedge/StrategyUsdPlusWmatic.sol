@@ -334,15 +334,16 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
             (poolWmatic, poolUsdPlus) = this._getLiquidityByLp(balanceLp);
         }
 
-        // TODO: move definition to usage
-        uint256 NAV;
         uint256 poolMaticUsd = AaveBorrowLibrary.convertTokenAmountToUsd(poolWmatic, wmaticDm, uint256(oracleWmatic.latestAnswer()));
         uint256 poolUsdpUsd = AaveBorrowLibrary.convertTokenAmountToUsd(poolUsdPlus, usdcDm, uint256(oracleUsdc.latestAnswer()));
-        // console.log("aaveCollateralUsd", aaveCollateralUsd);
-        // console.log("aaveBorrowUsd", aaveBorrowUsd);
-        // console.log("poolMaticUsd", poolMaticUsd);
-        // console.log("poolUsdpUsd", poolUsdpUsd);
-        NAV = poolMaticUsd + poolUsdpUsd + aaveCollateralUsd - aaveBorrowUsd;
+
+        console.log("-----------------");
+        console.log("aaveCollateralUsd ", aaveCollateralUsd);
+        console.log("aaveBorrowUsd     ", aaveBorrowUsd);
+        console.log("poolMaticUsd      ", poolMaticUsd);
+        console.log("poolUsdpUsd       ", poolUsdpUsd);
+
+        uint256 NAV = poolMaticUsd + poolUsdpUsd + aaveCollateralUsd - aaveBorrowUsd;
 
         // correct NAV by stake/unstake amount
         if (method == Method.STAKE) {
@@ -351,7 +352,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
             require(NAV >= amount, "Not enough NAV for payback");
             NAV -= amount;
         }
-        // console.log("NAV", NAV);
+         console.log("NAV              ", NAV);
 
         console.log("-----------------");
         console.log("aaveCollateralUsdNeeded ", NAV * aaveCollateralPercent / 10 ** 18);
