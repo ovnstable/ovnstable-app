@@ -395,9 +395,39 @@ async function checkTimeLockBalance() {
 
 }
 
+async function transferETH(amount, to) {
+
+    let privateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; // Ganache key
+    let walletWithProvider = new ethers.Wallet(privateKey, hre.ethers.provider);
+
+    await walletWithProvider.sendTransaction({
+        to: to,
+        value: ethers.utils.parseEther(amount+"")
+    });
+
+    console.log('Balance ETH: ' + await hre.ethers.provider.getBalance(to));
+}
+
+async function transferUSDPlus(amount, to){
+
+    let usdPlus = await getContract('UsdPlusToken');
+
+    await execTimelock(async (timelock)=>{
+        let exchange = await usdPlus.exchange();
+
+        await usdPlus.connect(timelock).setExchanger(timelock.address);
+        await usdPlus.connect(timelock).mint(to, toUSDC(amount));
+        await usdPlus.connect(timelock).setExchanger(exchange);
+    });
+
+    console.log('Balance USD+: ' + fromUSDC(await usdPlus.balanceOf(to)));
+}
+
 module.exports = {
     initWallet: initWallet,
     showM2M: showM2M,
+    transferETH: transferETH,
+    transferUSDPlus: transferUSDPlus,
     showHedgeM2M: showHedgeM2M,
     showPlatform: showPlatform,
     getPrice: getPrice,

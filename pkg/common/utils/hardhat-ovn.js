@@ -120,8 +120,8 @@ task(TASK_TEST, 'test')
 
 
         // enable full deploys
-        args.ovn = {
-            impl: true,
+        hre.ovn = {
+            impl: false,
             setting: true,
             noDeploy: false
         }
