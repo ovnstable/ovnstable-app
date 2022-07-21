@@ -6,8 +6,11 @@ const {
     TASK_NODE,
     TASK_COMPILE,
     TASK_RUN,
+    TASK_TEST,
 } = require('hardhat/builtin-tasks/task-names');
 const {evmCheckpoint, evmRestore} = require("./sharedBeforeEach");
+const {node_url} = require("../utils/network");
+const {getNodeUrl} = require("./network");
 
 task('deploy', 'deploy')
     .addFlag('noDeploy', 'Deploy contract|Upgrade proxy')
@@ -27,6 +30,7 @@ task('deploy', 'deploy')
 task(TASK_NODE, 'Starts a JSON-RPC server on top of Hardhat EVM')
     .addFlag('reset', 'Reset files')
     .addFlag('deploy', 'Run deploy')
+    .addFlag('last', 'Use last block from RPC')
     .setAction(async (args, hre, runSuper) => {
 
         await fs.copyFile('.openzeppelin/unknown-137.json', '.openzeppelin/unknown-31337.json', (e) => {
@@ -46,6 +50,26 @@ task(TASK_NODE, 'Starts a JSON-RPC server on top of Hardhat EVM')
             if (err) return console.log(err);
         });
 
+        if (args.last) {
+
+            let nodeUrl = getNodeUrl();
+            const provider = new hre.ethers.providers.JsonRpcProvider(nodeUrl);
+            let block = await provider.getBlockNumber() - 31;
+
+            console.log('Set last block: ' + block);
+
+            await hre.network.provider.request({
+                method: "hardhat_reset",
+                params: [
+                    {
+                        forking: {
+                            jsonRpcUrl: nodeUrl,
+                            blockNumber: block,
+                        },
+                    },
+                ],
+            })
+        }
 
         if (args.deploy)
             args.noDeploy = false;
@@ -81,7 +105,6 @@ task(TASK_RUN, 'Run task')
     });
 
 
-
 task(TASK_COMPILE, 'Compile')
     .setAction(async (args, hre, runSuper) => {
 
@@ -89,4 +112,23 @@ task(TASK_COMPILE, 'Compile')
 
         await runSuper(args);
 
+    });
+
+
+task(TASK_TEST, 'test')
+    .setAction(async (args, hre, runSuper) => {
+
+
+        // enable full deploys
+        args.ovn = {
+            impl: true,
+            setting: true,
+            noDeploy: false
+        }
+
+        await evmCheckpoint('task', hre.network.provider);
+
+        await runSuper(args);
+
+        await evmRestore('task', hre.network.provider);
     });

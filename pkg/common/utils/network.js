@@ -76,7 +76,12 @@ function blockNumber(networkName) {
     }
 }
 
+function getNodeUrl(){
+    return node_url(process.env.ETH_NETWORK.toLowerCase());
+}
+
 module.exports = {
+    getNodeUrl: getNodeUrl,
     node_url: node_url,
     accounts: accounts,
     getGasPrice: getGasPrice,

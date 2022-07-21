@@ -10,6 +10,7 @@ const BN = require('bn.js');
 let ethers = require('hardhat').ethers;
 
 let wallet = undefined;
+
 async function initWallet() {
 
     if (wallet)
@@ -26,7 +27,7 @@ async function initWallet() {
 }
 
 
-async function getContract(name, network){
+async function getContract(name, network) {
 
     if (!network)
         network = process.env.STAND;
@@ -40,14 +41,14 @@ async function getContract(name, network){
 
 }
 
-async function getAbi(name){
+async function getAbi(name) {
 
     let searchPath = fromDir(require('app-root-path').path, path.join(name + ".json"));
     return JSON.parse(fs.readFileSync(searchPath)).abi;
 
 }
 
-async function getStrategy(address){
+async function getStrategy(address) {
 
     let ethers = hre.ethers;
     let wallet = await initWallet(ethers);
@@ -57,7 +58,7 @@ async function getStrategy(address){
 
 }
 
-async function getERC20(name){
+async function getERC20(name) {
 
     let ethers = hre.ethers;
     let wallet = await initWallet(ethers);
@@ -97,9 +98,9 @@ function fromDir(startPath, filter) {
 async function showPlatform(platform, blocknumber) {
 
     let strategyAssets;
-    if (blocknumber){
+    if (blocknumber) {
         strategyAssets = await platform.getStrategies({blockNumber: blocknumber});
-    }else {
+    } else {
         strategyAssets = await platform.getStrategies();
     }
 
@@ -118,7 +119,7 @@ async function showPlatform(platform, blocknumber) {
         let nav = fromUSDC(await contract.netAssetValue());
         let liq = fromUSDC(await contract.liquidationValue());
 
-        items.push({name: mapping ? mapping.name : asset,netAssetValue: nav, liquidationValue: liq});
+        items.push({name: mapping ? mapping.name : asset, netAssetValue: nav, liquidationValue: liq});
     }
 
     console.table(items);
@@ -128,20 +129,27 @@ async function showHedgeM2M() {
 
     let wallet = await initWallet();
 
-    let usdPlus = await getContract('UsdPlusToken', 'polygon');
-    let rebase = await getContract('RebaseTokenUsdPlusWmatic', 'polygon_dev');
-    let strategy = await getContract('StrategyUsdPlusWmatic', 'polygon_dev');
+    let usdPlus = await getContract('UsdPlusToken');
+    let rebase = await getContract('RebaseTokenUsdPlusWmatic');
+    let strategy = await getContract('StrategyUsdPlusWmatic');
 
-    console.log('User balances:')
-    console.log("Rebase:       " + fromUSDC(await rebase.balanceOf(wallet.address)))
-    console.log("usdPlus:      " + fromUSDC(await usdPlus.balanceOf(wallet.address)))
-    console.log('')
+    console.log('User balances')
+    let user = [];
 
-    console.log('ETS balances:')
-    console.log('Total Rebase: ' + fromUSDC(await rebase.totalSupply()));
-    console.log('Total NAV:    ' + fromUSDC(await strategy.netAssetValue()));
-    console.log('HF:           ' + fromUSDC(await strategy.currentHealthFactor()));
-    console.log('Liq index:    ' + await rebase.liquidityIndex());
+    user.push({name: 'ETS', value: fromUSDC(await rebase.balanceOf(wallet.address)) });
+    user.push({name: 'UsdPlus', value: fromUSDC(await usdPlus.balanceOf(wallet.address)) });
+    console.table(user);
+
+    console.log('ETS:')
+
+    let values = [];
+    values.push({name: 'Total ETS', value: fromUSDC(await rebase.totalSupply()) });
+    values.push({name: 'Total NAV', value: fromUSDC(await strategy.netAssetValue()) });
+    values.push({name: 'HF', value: (await strategy.currentHealthFactor()).toString() });
+    values.push({name: 'Liq index', value: (await rebase.liquidityIndex()).toString() });
+
+    console.table(values);
+
 
     let items = await strategy.balances();
 
@@ -171,18 +179,18 @@ async function showM2M(blocknumber) {
     let strategyAssets;
     let totalNetAssets;
     let strategyWeights;
-    if (blocknumber){
+    if (blocknumber) {
         strategyAssets = await m2m.strategyAssets({blockTag: blocknumber});
         totalNetAssets = await m2m.totalNetAssets({blockTag: blocknumber});
-        strategyWeights = await pm.getAllStrategyWeights({ blockTag: blocknumber });
-    }else {
+        strategyWeights = await pm.getAllStrategyWeights({blockTag: blocknumber});
+    } else {
         strategyAssets = await m2m.strategyAssets();
         totalNetAssets = await m2m.totalNetAssets();
         strategyWeights = await pm.getAllStrategyWeights();
     }
 
     let url;
-    switch(process.env.STAND){
+    switch (process.env.STAND) {
         case "avalanche":
             url = "https://avax.overnight.fi/api/dict/strategies";
             break;
@@ -224,7 +232,7 @@ async function showM2M(blocknumber) {
                 name: mapping ? mapping.name : asset.strategy,
                 netAssetValue: fromUSDC(asset.netAssetValue),
                 liquidationValue: fromUSDC(asset.liquidationValue),
-                targetWeight:  weight.targetWeight.toNumber() / 1000,
+                targetWeight: weight.targetWeight.toNumber() / 1000,
                 maxWeight: weight.maxWeight.toNumber() / 1000,
                 enabled: weight.enabled,
                 enabledReward: weight.enabledReward
@@ -239,13 +247,13 @@ async function showM2M(blocknumber) {
     console.table(items);
     console.log('Total m2m:  ' + fromUSDC(totalNetAssets.toNumber()));
 
-    if (usdPlus){
+    if (usdPlus) {
 
         let totalUsdPlus;
-        if (blocknumber){
-            totalUsdPlus = (await usdPlus.totalSupply({blockTag: blocknumber})) /10 ** 6
-        }else {
-            totalUsdPlus = (await usdPlus.totalSupply()) /10 ** 6
+        if (blocknumber) {
+            totalUsdPlus = (await usdPlus.totalSupply({blockTag: blocknumber})) / 10 ** 6
+        } else {
+            totalUsdPlus = (await usdPlus.totalSupply()) / 10 ** 6
         }
         console.log('Total USD+: ' + totalUsdPlus);
     }
@@ -254,7 +262,7 @@ async function showM2M(blocknumber) {
 }
 
 
-async function getPrice(){
+async function getPrice() {
     let value = process.env.GAS_PRICE.toString() + "000000000";
 
     let params = {maxFeePerGas: value, maxPriorityFeePerGas: value};
@@ -289,10 +297,10 @@ async function upgradeStrategy(strategy, newImplAddress) {
 
 }
 
-async function execTimelock(exec){
+async function execTimelock(exec) {
 
 
-    let timelock = await getContract('OvnTimelockController' );
+    let timelock = await getContract('OvnTimelockController');
 
 
     hre.ethers.provider = new hre.ethers.providers.JsonRpcProvider('http://localhost:8545')
@@ -315,14 +323,14 @@ async function execTimelock(exec){
 
 }
 
-async function changeWeightsAndBalance(weights){
+async function changeWeightsAndBalance(weights) {
 
     await evmCheckpoint('Before');
 
-    let timelock = await getContract('OvnTimelockController' );
-    let pm = await getContract('PortfolioManager' );
-    let usdPlus = await getContract('UsdPlusToken' );
-    let usdc = await getERC20('usdc' );
+    let timelock = await getContract('OvnTimelockController');
+    let pm = await getContract('PortfolioManager');
+    let usdPlus = await getContract('UsdPlusToken');
+    let usdc = await getERC20('usdc');
     let exchange = await getContract('Exchange');
 
     console.log('M2M before:')
@@ -352,7 +360,7 @@ async function changeWeightsAndBalance(weights){
     });
 
 
-    if (fromUSDC(await usdc.balanceOf(wallet.address)) > 10){
+    if (fromUSDC(await usdc.balanceOf(wallet.address)) > 10) {
         await usdc.approve(exchange.address, toUSDC(10));
         await exchange.buy(usdc.address, toUSDC(10));
 
@@ -367,13 +375,13 @@ async function changeWeightsAndBalance(weights){
 
 }
 
-async function checkTimeLockBalance(){
+async function checkTimeLockBalance() {
 
-    let timelock = await getContract('OvnTimelockController' );
+    let timelock = await getContract('OvnTimelockController');
 
     const balance = await hre.ethers.provider.getBalance(timelock.address);
 
-    if (new BN(balance.toString()).lt(new BN("10000000000000000000"))){
+    if (new BN(balance.toString()).lt(new BN("10000000000000000000"))) {
         const tx = {
             from: wallet.address,
             to: timelock.address,
