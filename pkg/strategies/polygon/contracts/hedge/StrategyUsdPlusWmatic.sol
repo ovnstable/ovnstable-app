@@ -414,10 +414,9 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         // console.log("poolUsdpUsd", poolUsdpUsd);
         NAV = poolMaticUsd + poolUsdpUsd + aaveCollateralUsd - aaveBorrowUsd;
 
-        //FIXME: same value check
         if (method == 1) {
             NAV += amount;
-        } else if (method == 1) {
+        } else if (method == 2) {
             NAV -= amount;
         }
         // console.log("NAV", NAV);
