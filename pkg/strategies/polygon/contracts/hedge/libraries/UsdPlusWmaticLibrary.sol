@@ -256,22 +256,25 @@ library UsdPlusWmaticLibrary {
         self.aavePool().supply(address(self.usdc()), amount, address(this), self.REFERRAL_CODE());
     }
 
+    /**
+     * (borrow from aave) -> wmatic
+     */
     function _borrowNeededWmatic(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.BalanceContext  memory ctx) public {
 
         console.log("----------------- _borrowNeededWmatic");
         console.log("ctx.aaveBorrowUsdNeeded       ", ctx.aaveBorrowUsdNeeded);
 
         // calc amount
-        uint256 aaveMatic = AaveBorrowLibrary.convertUsdToTokenAmount(
+        uint256 borrowWMaticAmount = AaveBorrowLibrary.convertUsdToTokenAmount(
             ctx.aaveBorrowUsdNeeded,
             self.wmaticDm(),
             uint256(self.oracleWmatic().latestAnswer())
         );
-        console.log("aaveMatic                     ", aaveMatic);
+        console.log("aaveMatic                     ", borrowWMaticAmount);
         // borrow wmatics
         self.aavePool().borrow(
             address(self.wmatic()),
-            aaveMatic,
+            borrowWMaticAmount,
             self.INTEREST_RATE_MODE(),
             self.REFERRAL_CODE(),
             address(self)
