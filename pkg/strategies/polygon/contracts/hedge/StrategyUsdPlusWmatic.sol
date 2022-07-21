@@ -296,7 +296,6 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
 
 
     function makeContext(Method method, uint256 amount) public view returns (BalanceContext memory ctx){
-        //TODO: make getDeltas return Delta struct
 
         uint256 aaveCollateralPercent;
         uint256 aaveBorrowAndPoolMaticPercent;
