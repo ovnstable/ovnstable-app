@@ -136,17 +136,17 @@ async function showHedgeM2M() {
     console.log('User balances')
     let user = [];
 
-    user.push({name: 'ETS', value: fromUSDC(await rebase.balanceOf(wallet.address)) });
-    user.push({name: 'UsdPlus', value: fromUSDC(await usdPlus.balanceOf(wallet.address)) });
+    user.push({name: 'ETS', value: fromUSDC(await rebase.balanceOf(wallet.address))});
+    user.push({name: 'UsdPlus', value: fromUSDC(await usdPlus.balanceOf(wallet.address))});
     console.table(user);
 
     console.log('ETS:')
 
     let values = [];
-    values.push({name: 'Total ETS', value: fromUSDC(await rebase.totalSupply()) });
-    values.push({name: 'Total NAV', value: fromUSDC(await strategy.netAssetValue()) });
-    values.push({name: 'HF', value: (await strategy.currentHealthFactor()).toString() });
-    values.push({name: 'Liq index', value: (await rebase.liquidityIndex()).toString() });
+    values.push({name: 'Total ETS', value: fromUSDC(await rebase.totalSupply())});
+    values.push({name: 'Total NAV', value: fromUSDC(await strategy.netAssetValue())});
+    values.push({name: 'HF', value: (await strategy.currentHealthFactor()).toString()});
+    values.push({name: 'Liq index', value: (await rebase.liquidityIndex()).toString()});
 
     console.table(values);
 
@@ -297,13 +297,13 @@ async function upgradeStrategy(strategy, newImplAddress) {
 
 }
 
-async function execTimelock(exec) {
+async function execTimelock(exec, skipCheckBalance) {
 
 
     let timelock = await getContract('OvnTimelockController');
 
 
-    hre.ethers.provider = new hre.ethers.providers.JsonRpcProvider('http://localhost:8545')
+    // hre.ethers.provider = new hre.ethers.providers.JsonRpcProvider('http://localhost:8545')
     await hre.network.provider.request({
         method: "hardhat_impersonateAccount",
         params: [timelock.address],
@@ -385,7 +385,7 @@ async function checkTimeLockBalance() {
         const tx = {
             from: wallet.address,
             to: timelock.address,
-            value: toE18(1),
+            value: toE18(1).toString(),
             nonce: await hre.ethers.provider.getTransactionCount(wallet.address, "latest"),
             gasLimit: 229059,
             gasPrice: await hre.ethers.provider.getGasPrice(),
@@ -402,17 +402,17 @@ async function transferETH(amount, to) {
 
     await walletWithProvider.sendTransaction({
         to: to,
-        value: ethers.utils.parseEther(amount+"")
+        value: ethers.utils.parseEther(amount + "")
     });
 
     console.log('Balance ETH: ' + await hre.ethers.provider.getBalance(to));
 }
 
-async function transferUSDPlus(amount, to){
+async function transferUSDPlus(amount, to) {
 
     let usdPlus = await getContract('UsdPlusToken');
 
-    await execTimelock(async (timelock)=>{
+    await execTimelock(async (timelock) => {
         let exchange = await usdPlus.exchange();
 
         await usdPlus.connect(timelock).setExchanger(timelock.address);
