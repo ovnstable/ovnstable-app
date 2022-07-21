@@ -273,6 +273,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
 
 
     function _claimRewards(address _to) internal override returns (uint256){
+        //FIXME: recursion
         return this.claimRewards();
     }
 
