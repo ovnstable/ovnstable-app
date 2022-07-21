@@ -154,25 +154,15 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
 
         if (ctx.caseNumber == 1) {
             this._caseNumber1(ctx);
-        }
-
-        if (ctx.caseNumber == 2) {
+        } else if (ctx.caseNumber == 2) {
             this._caseNumber2(ctx);
-        }
-
-        if (ctx.caseNumber == 3) {
+        } else if (ctx.caseNumber == 3) {
             this._caseNumber3(ctx);
-        }
-
-        if (ctx.caseNumber == 4) {
+        } else if (ctx.caseNumber == 4) {
             this._caseNumber4(ctx);
-        }
-
-        if (ctx.caseNumber == 5) {
+        } else if (ctx.caseNumber == 5) {
             this._caseNumber5(ctx);
-        }
-
-        if (ctx.caseNumber == 6) {
+        } else if (ctx.caseNumber == 6) {
             this._caseNumber6(ctx);
         }
 
@@ -192,25 +182,15 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
 
         if (ctx.caseNumber == 1) {
             this._caseNumber1(ctx);
-        }
-
-        if (ctx.caseNumber == 2) {
+        } else if (ctx.caseNumber == 2) {
             this._caseNumber2(ctx);
-        }
-
-        if (ctx.caseNumber == 3) {
+        } else if (ctx.caseNumber == 3) {
             this._caseNumber3(ctx);
-        }
-
-        if (ctx.caseNumber == 4) {
+        } else if (ctx.caseNumber == 4) {
             this._caseNumber4(ctx);
-        }
-
-        if (ctx.caseNumber == 5) {
+        } else if (ctx.caseNumber == 5) {
             this._caseNumber5(ctx);
-        }
-
-        if (ctx.caseNumber == 6) {
+        } else if (ctx.caseNumber == 6) {
             this._caseNumber6(ctx);
         }
 
@@ -314,25 +294,15 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         //TODO: try to use readable enums and readable method names
         if (ctx.caseNumber == 1) {
             this._caseNumber1(ctx);
-        }
-
-        if (ctx.caseNumber == 2) {
+        } else if (ctx.caseNumber == 2) {
             this._caseNumber2(ctx);
-        }
-
-        if (ctx.caseNumber == 3) {
+        } else if (ctx.caseNumber == 3) {
             this._caseNumber3(ctx);
-        }
-
-        if (ctx.caseNumber == 4) {
+        } else if (ctx.caseNumber == 4) {
             this._caseNumber4(ctx);
-        }
-
-        if (ctx.caseNumber == 5) {
+        } else if (ctx.caseNumber == 5) {
             this._caseNumber5(ctx);
-        }
-
-        if (ctx.caseNumber == 6) {
+        } else if (ctx.caseNumber == 6) {
             this._caseNumber6(ctx);
         }
 
