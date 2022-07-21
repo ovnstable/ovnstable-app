@@ -186,7 +186,11 @@ library UsdPlusWmaticLibrary {
     }
 
     function _removeLiq(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.Delta memory delta) public {
-        delta.poolUsdpUsdDelta = AaveBorrowLibrary.convertUsdToTokenAmount(delta.poolUsdpUsdDelta, self.usdcDm(), uint256(self.oracleUsdc().latestAnswer()));
+        delta.poolUsdpUsdDelta = AaveBorrowLibrary.convertUsdToTokenAmount(
+            delta.poolUsdpUsdDelta,
+            self.usdcDm(),
+            uint256(self.oracleUsdc().latestAnswer())
+        );
         IPool aave = _aavePool(self);
 
         {
@@ -204,11 +208,20 @@ library UsdPlusWmaticLibrary {
 
     function _repayAllWmatic(StrategyUsdPlusWmatic self) public {
         self.wmatic().approve(address(_aavePool(self)), self.wmatic().balanceOf(address(self)));
-        _aavePool(self).repay(address(self.wmatic()), self.wmatic().balanceOf(address(self)), self.INTEREST_RATE_MODE(), address(self));
+        _aavePool(self).repay(
+            address(self.wmatic()),
+            self.wmatic().balanceOf(address(self)),
+            self.INTEREST_RATE_MODE(),
+            address(self)
+        );
     }
 
     function _withdrawNeededUsdcInUsd(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.Delta memory delta) public {
-        uint256 aaveUsdc = AaveBorrowLibrary.convertUsdToTokenAmount(delta.aaveCollateralUsdNeeded, self.usdcDm(), uint256(self.oracleUsdc().latestAnswer()));
+        uint256 aaveUsdc = AaveBorrowLibrary.convertUsdToTokenAmount(
+            delta.aaveCollateralUsdNeeded,
+            self.usdcDm(),
+            uint256(self.oracleUsdc().latestAnswer())
+        );
         _aavePool(self).withdraw(address(self.usdc()), aaveUsdc, address(self));
     }
 
@@ -219,8 +232,18 @@ library UsdPlusWmaticLibrary {
     }
 
     function _borrowNeededWmatic(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.Delta memory delta) public {
-        uint256 aaveMatic = AaveBorrowLibrary.convertUsdToTokenAmount(delta.aaveBorrowUsdNeeded, self.wmaticDm(), uint256(self.oracleWmatic().latestAnswer()));
-        _aavePool(self).borrow(address(self.wmatic()), aaveMatic, self.INTEREST_RATE_MODE(), self.REFERRAL_CODE(), address(self));
+        uint256 aaveMatic = AaveBorrowLibrary.convertUsdToTokenAmount(
+            delta.aaveBorrowUsdNeeded,
+            self.wmaticDm(),
+            uint256(self.oracleWmatic().latestAnswer())
+        );
+        _aavePool(self).borrow(
+            address(self.wmatic()),
+            aaveMatic,
+            self.INTEREST_RATE_MODE(),
+            self.REFERRAL_CODE(),
+            address(self)
+        );
     }
 
     function _swapUspPlusToToken(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.Delta memory delta, address _to, uint256 amount, bool stable) public {
@@ -230,7 +253,8 @@ library UsdPlusWmaticLibrary {
             _to,
             stable,
             amount,
-            address(self));
+            address(self)
+        );
     }
 
     function _swapUsdcToWmatic(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.Delta memory delta, uint256 amount) public {
@@ -240,7 +264,8 @@ library UsdPlusWmaticLibrary {
             address(self.wmatic()),
             false,
             amount,
-            address(self));
+            address(self)
+        );
     }
 
     function _caseNumber1(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.Delta memory delta) public {
@@ -250,7 +275,14 @@ library UsdPlusWmaticLibrary {
 
         _convertTokensToUsdPlus(self);
 
-        _swapUspPlusToToken(self, delta, address(self.wmatic()), self.usdPlus().balanceOf(address(self)) - (delta.method == 2 ? delta.amount : 0), false);
+        // usd+ -> wmatic
+        _swapUspPlusToToken(
+            self,
+            delta,
+            address(self.wmatic()),
+            self.usdPlus().balanceOf(address(self)) - (delta.method == 2 ? delta.amount : 0),
+            false
+        );
         _repayAllWmatic(self);
     }
 
@@ -282,7 +314,14 @@ library UsdPlusWmaticLibrary {
 
         _convertTokensToUsdPlus(self);
 
-        _swapUspPlusToToken(self, delta, address(self.usdc()), self.usdPlus().balanceOf(address(self)) - (delta.method == 2 ? delta.amount : 0), true);
+        // usd+ -> usdc
+        _swapUspPlusToToken(
+            self,
+            delta,
+            address(self.usdc()),
+            self.usdPlus().balanceOf(address(self)) - (delta.method == 2 ? delta.amount : 0),
+            true
+        );
         _supplyCurrentUsdcAmount(self, delta, delta.aaveCollateralUsdNeeded / 100);
         _swapUsdcToWmatic(self, delta, self.usdc().balanceOf(address(self)));
 
@@ -297,7 +336,14 @@ library UsdPlusWmaticLibrary {
 
         _convertTokensToUsdPlus(self);
 
-        _swapUspPlusToToken(self, delta, address(self.usdc()), self.usdPlus().balanceOf(address(self)) - (delta.method == 2 ? delta.amount : 0), true);
+        // usd+ -> usdc
+        _swapUspPlusToToken(
+            self,
+            delta,
+            address(self.usdc()),
+            self.usdPlus().balanceOf(address(self)) - (delta.method == 2 ? delta.amount : 0),
+            true
+        );
         _supplyCurrentUsdcAmount(self, delta, self.usdc().balanceOf(address(self)));
     }
 
@@ -308,7 +354,14 @@ library UsdPlusWmaticLibrary {
 
         _convertTokensToUsdPlus(self);
 
-        _swapUspPlusToToken(self, delta, address(self.usdc()), delta.aaveCollateralUsdNeeded / 100, true);
+        // usd+ -> usdc
+        _swapUspPlusToToken(
+            self,
+            delta,
+            address(self.usdc()),
+            delta.aaveCollateralUsdNeeded / 100,
+            true
+        );
         _supplyCurrentUsdcAmount(self, delta, self.usdc().balanceOf(address(self)));
         _pushAllUsdpToPool(self, delta);
     }
