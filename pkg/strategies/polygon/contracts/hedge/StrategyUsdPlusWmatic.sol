@@ -157,22 +157,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
 
         console.log("stake case", ctx.caseNumber);
 
-
-        if (ctx.caseNumber == 1) {
-            this._caseNumber1(ctx);
-        } else if (ctx.caseNumber == 2) {
-            this._caseNumber2(ctx);
-        } else if (ctx.caseNumber == 3) {
-            this._caseNumber3(ctx);
-        } else if (ctx.caseNumber == 4) {
-            this._caseNumber4(ctx);
-        } else if (ctx.caseNumber == 5) {
-            this._caseNumber5(ctx);
-        } else if (ctx.caseNumber == 6) {
-            this._caseNumber6(ctx);
-        }
-
-        (,,,,, realHealthFactor) = aavePool().getUserAccountData(address(this));
+        _execBalance(ctx);
     }
 
 
@@ -185,7 +170,13 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
 
         console.log("unstake case", ctx.caseNumber);
 
+        _execBalance(ctx);
 
+        return _amount;
+    }
+
+    function _execBalance(BalanceContext memory ctx) internal {
+        //TODO: try to use readable enums and readable method names
         if (ctx.caseNumber == 1) {
             this._caseNumber1(ctx);
         } else if (ctx.caseNumber == 2) {
@@ -201,8 +192,6 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         }
 
         (,,,,, realHealthFactor) = aavePool().getUserAccountData(address(this));
-
-        return _amount;
     }
 
     function aavePool() public view returns (IPool){
@@ -283,11 +272,8 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     }
 
 
-
-
-
     function _claimRewards(address _to) internal override returns (uint256){
-       return this.claimRewards();
+        return this.claimRewards();
     }
 
     function _balance() internal override returns (uint256) {
@@ -297,22 +283,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
 
         console.log("case", ctx.caseNumber);
 
-        //TODO: try to use readable enums and readable method names
-        if (ctx.caseNumber == 1) {
-            this._caseNumber1(ctx);
-        } else if (ctx.caseNumber == 2) {
-            this._caseNumber2(ctx);
-        } else if (ctx.caseNumber == 3) {
-            this._caseNumber3(ctx);
-        } else if (ctx.caseNumber == 4) {
-            this._caseNumber4(ctx);
-        } else if (ctx.caseNumber == 5) {
-            this._caseNumber5(ctx);
-        } else if (ctx.caseNumber == 6) {
-            this._caseNumber6(ctx);
-        }
-
-        (,,,,, realHealthFactor) = aavePool().getUserAccountData(address(this));
+        _execBalance(ctx);
 
         return realHealthFactor;
     }
@@ -335,7 +306,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
             uint256 chainlinkUsdUsdc = uint256(oracleUsdc.latestAnswer());
             uint256 chainlinkUsdMatic = uint256(oracleWmatic.latestAnswer());
             (uint256 amount0Current, uint256 amount1Current,) = dystVault.getReserves();
-            uint256 dystUsdpMatic = amount1Current * 10**20 / amount0Current;
+            uint256 dystUsdpMatic = amount1Current * 10 ** 20 / amount0Current;
 
             // console.log(chainlinkUsdUsdc);
             // console.log(chainlinkUsdMatic);
@@ -373,6 +344,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         // console.log("poolUsdpUsd", poolUsdpUsd);
         NAV = poolMaticUsd + poolUsdpUsd + aaveCollateralUsd - aaveBorrowUsd;
 
+        // correct NAV by stake/unstake amount
         if (method == Method.STAKE) {
             NAV += amount;
         } else if (method == Method.UNSTAKE) {
@@ -393,6 +365,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         // console.log("poolUsdpUsdDelta", poolUsdpUsd - NAV*poolUsdpPercent/10**18);
         // console.log("");
 
+        // prepare context variable
         ctx = BalanceContext(
             0,
             0,
@@ -406,7 +379,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         uint256 __aaveBorrowAndPoolMaticNew = NAV * aaveBorrowAndPoolMaticPercent / 10 ** 18;
         uint256 __aaveCollateralNew = NAV * aaveCollateralPercent / 10 ** 18;
 
-
+        // set cases and deltas
         if (aaveCollateralUsd > __aaveCollateralNew) {
             if (aaveBorrowUsd > __aaveBorrowAndPoolMaticNew) {
                 if (poolUsdpUsd > __poolUsdpNew) {
