@@ -72,8 +72,14 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         uint256 aaveCollateralUsdNeeded;
         uint256 aaveBorrowUsdNeeded;
         uint256 poolUsdpUsdDelta;
-        uint256 method;
+        Method method;
         uint256 amount;
+    }
+
+    enum Method {
+        NOTHING,
+        STAKE,
+        UNSTAKE
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -147,7 +153,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     function _stake(uint256 _amount) internal override {
         _updateEMode();
 
-        BalanceContext memory ctx = makeContext(1, _amount);
+        BalanceContext memory ctx = makeContext(Method.STAKE, _amount);
 
         console.log("stake case", ctx.caseNumber);
 
@@ -175,7 +181,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     ) internal override returns (uint256) {
         _updateEMode();
 
-        BalanceContext memory ctx = makeContext(2, _amount);
+        BalanceContext memory ctx = makeContext(Method.UNSTAKE, _amount);
 
         console.log("unstake case", ctx.caseNumber);
 
@@ -287,7 +293,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     function _balance() internal override returns (uint256) {
         _updateEMode();
 
-        BalanceContext memory ctx = makeContext(0, 0);
+        BalanceContext memory ctx = makeContext(Method.NOTHING, 0);
 
         console.log("case", ctx.caseNumber);
 
@@ -317,7 +323,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     }
 
 
-    function makeContext(uint256 method, uint256 amount) public view returns (BalanceContext memory ctx){
+    function makeContext(Method method, uint256 amount) public view returns (BalanceContext memory ctx){
         //TODO: make getDeltas return Delta struct
 
         uint256 aaveCollateralPercent;
@@ -367,9 +373,9 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         // console.log("poolUsdpUsd", poolUsdpUsd);
         NAV = poolMaticUsd + poolUsdpUsd + aaveCollateralUsd - aaveBorrowUsd;
 
-        if (method == 1) {
+        if (method == Method.STAKE) {
             NAV += amount;
-        } else if (method == 2) {
+        } else if (method == Method.UNSTAKE) {
             require(NAV >= amount, "Not enough NAV for payback");
             NAV -= amount;
         }

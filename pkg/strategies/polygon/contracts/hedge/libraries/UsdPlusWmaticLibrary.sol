@@ -153,7 +153,7 @@ library UsdPlusWmaticLibrary {
 
         (uint256 amount0Current, uint256 amount1Current,) = self.dystVault().getReserves();
 
-        uint256 allowedAmount = usdPlus.balanceOf(address(self)) - (ctx.method == 2 ? ctx.amount : 0);
+        uint256 allowedAmount = usdPlus.balanceOf(address(self)) - (ctx.method == StrategyUsdPlusWmatic.Method.UNSTAKE ? ctx.amount : 0);
         console.log("allowedAmount", allowedAmount);
         uint256 amountUsdcToSwap = _getAmountToken0(
             self,
@@ -175,7 +175,7 @@ library UsdPlusWmaticLibrary {
             amountUsdcToSwap,
             address(self));
 
-        uint256 usdPlusAmount = usdPlus.balanceOf(address(self)) - (ctx.method == 2 ? ctx.amount : 0);
+        uint256 usdPlusAmount = usdPlus.balanceOf(address(self)) - (ctx.method == StrategyUsdPlusWmatic.Method.UNSTAKE ? ctx.amount : 0);
         uint256 wmaticAmount = wmatic.balanceOf(address(self));
 
         _addLiquidity(self, wmaticAmount, usdPlusAmount);
@@ -276,7 +276,7 @@ library UsdPlusWmaticLibrary {
             self,
             ctx,
             address(self.wmatic()),
-            self.usdPlus().balanceOf(address(self)) - (ctx.method == 2 ? ctx.amount : 0),
+            self.usdPlus().balanceOf(address(self)) - (ctx.method == StrategyUsdPlusWmatic.Method.UNSTAKE ? ctx.amount : 0),
             false
         );
         _repayAllWmatic(self);
@@ -315,7 +315,7 @@ library UsdPlusWmaticLibrary {
             self,
             ctx,
             address(self.usdc()),
-            self.usdPlus().balanceOf(address(self)) - (ctx.method == 2 ? ctx.amount : 0),
+            self.usdPlus().balanceOf(address(self)) - (ctx.method == StrategyUsdPlusWmatic.Method.UNSTAKE ? ctx.amount : 0),
             true
         );
         _supplyCurrentUsdcAmount(self, ctx, ctx.aaveCollateralUsdNeeded / 100);
@@ -337,7 +337,7 @@ library UsdPlusWmaticLibrary {
             self,
             ctx,
             address(self.usdc()),
-            self.usdPlus().balanceOf(address(self)) - (ctx.method == 2 ? ctx.amount : 0),
+            self.usdPlus().balanceOf(address(self)) - (ctx.method == StrategyUsdPlusWmatic.Method.UNSTAKE ? ctx.amount : 0),
             true
         );
         _supplyCurrentUsdcAmount(self, ctx, self.usdc().balanceOf(address(self)));
