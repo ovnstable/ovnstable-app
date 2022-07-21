@@ -67,7 +67,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
 
 
     // method 0--nothing, 1--stake, 2--unstake
-    struct Delta {
+    struct BalanceContext {
         uint256 aaveCollateralUsdNeeded;
         uint256 aaveBorrowUsdNeeded;
         uint256 poolUsdpUsdDelta;
@@ -146,38 +146,41 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     function _stake(uint256 _amount) internal override {
         _updateEMode();
 
-        (uint256 caseNumber, uint256 aaveCollateralUsdNeeded, uint256 aaveBorrowUsdNeeded, uint256 poolUsdpUsdDelta) = getDeltas(1, _amount);
+        (uint256 caseNumber,
+        uint256 aaveCollateralUsdNeeded,
+        uint256 aaveBorrowUsdNeeded,
+        uint256 poolUsdpUsdDelta) = makeContext(1, _amount);
 
         console.log("stake case", caseNumber);
 
-        Delta memory delta = Delta(
+        BalanceContext memory ctx = BalanceContext(
             aaveCollateralUsdNeeded,
             aaveBorrowUsdNeeded,
             poolUsdpUsdDelta, 1, _amount
         );
 
         if (caseNumber == 1) {
-            this._caseNumber1(delta);
+            this._caseNumber1(ctx);
         }
 
         if (caseNumber == 2) {
-            this._caseNumber2(delta);
+            this._caseNumber2(ctx);
         }
 
         if (caseNumber == 3) {
-            this._caseNumber3(delta);
+            this._caseNumber3(ctx);
         }
 
         if (caseNumber == 4) {
-            this._caseNumber4(delta);
+            this._caseNumber4(ctx);
         }
 
         if (caseNumber == 5) {
-            this._caseNumber5(delta);
+            this._caseNumber5(ctx);
         }
 
         if (caseNumber == 6) {
-            this._caseNumber6(delta);
+            this._caseNumber6(ctx);
         }
 
         (,,,,, realHealthFactor) = aavePool().getUserAccountData(address(this));
@@ -189,38 +192,38 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     ) internal override returns (uint256) {
         _updateEMode();
 
-        (uint256 caseNumber, uint256 aaveCollateralUsdNeeded, uint256 aaveBorrowUsdNeeded, uint256 poolUsdpUsdDelta) = getDeltas(2, _amount);
+        (uint256 caseNumber, uint256 aaveCollateralUsdNeeded, uint256 aaveBorrowUsdNeeded, uint256 poolUsdpUsdDelta) = makeContext(2, _amount);
 
         console.log("unstake case", caseNumber);
 
-        Delta memory delta = Delta(
+        BalanceContext memory ctx = BalanceContext(
             aaveCollateralUsdNeeded,
             aaveBorrowUsdNeeded,
             poolUsdpUsdDelta, 2, _amount
         );
 
         if (caseNumber == 1) {
-            this._caseNumber1(delta);
+            this._caseNumber1(ctx);
         }
 
         if (caseNumber == 2) {
-            this._caseNumber2(delta);
+            this._caseNumber2(ctx);
         }
 
         if (caseNumber == 3) {
-            this._caseNumber3(delta);
+            this._caseNumber3(ctx);
         }
 
         if (caseNumber == 4) {
-            this._caseNumber4(delta);
+            this._caseNumber4(ctx);
         }
 
         if (caseNumber == 5) {
-            this._caseNumber5(delta);
+            this._caseNumber5(ctx);
         }
 
         if (caseNumber == 6) {
-            this._caseNumber6(delta);
+            this._caseNumber6(ctx);
         }
 
         (,,,,, realHealthFactor) = aavePool().getUserAccountData(address(this));
@@ -316,11 +319,11 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     function _balance() internal override returns (uint256) {
         _updateEMode();
 
-        (uint256 caseNumber, uint256 aaveCollateralUsdNeeded, uint256 aaveBorrowUsdNeeded, uint256 poolUsdpUsdDelta) = getDeltas(0, 0);
+        (uint256 caseNumber, uint256 aaveCollateralUsdNeeded, uint256 aaveBorrowUsdNeeded, uint256 poolUsdpUsdDelta) = makeContext(0, 0);
 
         console.log("case", caseNumber);
 
-        Delta memory delta = Delta(
+        BalanceContext memory ctx = BalanceContext(
             aaveCollateralUsdNeeded,
             aaveBorrowUsdNeeded,
             poolUsdpUsdDelta, 0, 0
@@ -328,27 +331,27 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
 
         //TODO: try to use readable enums and readable method names
         if (caseNumber == 1) {
-            this._caseNumber1(delta);
+            this._caseNumber1(ctx);
         }
 
         if (caseNumber == 2) {
-            this._caseNumber2(delta);
+            this._caseNumber2(ctx);
         }
 
         if (caseNumber == 3) {
-            this._caseNumber3(delta);
+            this._caseNumber3(ctx);
         }
 
         if (caseNumber == 4) {
-            this._caseNumber4(delta);
+            this._caseNumber4(ctx);
         }
 
         if (caseNumber == 5) {
-            this._caseNumber5(delta);
+            this._caseNumber5(ctx);
         }
 
         if (caseNumber == 6) {
-            this._caseNumber6(delta);
+            this._caseNumber6(ctx);
         }
 
         (,,,,,uint256 healthFactorCurrent) = aavePool().getUserAccountData(address(this));
@@ -363,7 +366,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     }
 
 
-    function getDeltas(uint256 method, uint256 amount) public view returns (uint256, uint256, uint256, uint256){
+    function makeContext(uint256 method, uint256 amount) public view returns (uint256, uint256, uint256, uint256){
         //TODO: make getDeltas return Delta struct
 
         uint256 aaveCollateralPercent;
