@@ -370,6 +370,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         if (method == 1) {
             NAV += amount;
         } else if (method == 2) {
+            require(NAV >= amount, "Not enough NAV for payback");
             NAV -= amount;
         }
         // console.log("NAV", NAV);
