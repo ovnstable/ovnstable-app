@@ -295,30 +295,43 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     }
 
 
-    function makeContext(Method method, uint256 amount) public view returns (BalanceContext memory ctx){
-
+    function calcPercents() internal view returns (uint256, uint256, uint256){
         uint256 aaveCollateralPercent;
         uint256 aaveBorrowAndPoolMaticPercent;
         uint256 poolUsdpPercent;
 
-        //TODO: may be extract to method
-        {
-            uint256 chainlinkUsdUsdc = uint256(oracleUsdc.latestAnswer());
-            uint256 chainlinkUsdMatic = uint256(oracleWmatic.latestAnswer());
-            (uint256 amount0Current, uint256 amount1Current,) = dystVault.getReserves();
-            uint256 dystUsdpMatic = amount1Current * 10 ** 20 / amount0Current;
+        uint256 chainlinkUsdUsdc = uint256(oracleUsdc.latestAnswer());
+        uint256 chainlinkUsdMatic = uint256(oracleWmatic.latestAnswer());
+        (uint256 amount0Current, uint256 amount1Current,) = dystVault.getReserves();
+        uint256 dystUsdpMatic = amount1Current * 10 ** 20 / amount0Current;
 
-            console.log("-----------------");
-            console.log("chainlinkUsdUsdc  ", chainlinkUsdUsdc);
-            console.log("chainlinkUsdMatic ", chainlinkUsdMatic);
-            console.log("dystUsdpMatic     ", dystUsdpMatic);
+        console.log("-----------------");
+        console.log("chainlinkUsdUsdc  ", chainlinkUsdUsdc);
+        console.log("chainlinkUsdMatic ", chainlinkUsdMatic);
+        console.log("dystUsdpMatic     ", dystUsdpMatic);
 
-            //TODO: calc digits, is percent with extra 2 digits?
-            aaveCollateralPercent = (healthFactor * chainlinkUsdUsdc * chainlinkUsdMatic * 10 ** 18) / (healthFactor * chainlinkUsdUsdc * chainlinkUsdMatic + liquidationThreshold * dystUsdpMatic * 10 ** 8);
-            aaveBorrowAndPoolMaticPercent = aaveCollateralPercent * liquidationThreshold / healthFactor;
+        //TODO: calc digits, is percent with extra 2 digits?
+        aaveCollateralPercent = (healthFactor * chainlinkUsdUsdc * chainlinkUsdMatic * 10 ** 18) / (healthFactor * chainlinkUsdUsdc * chainlinkUsdMatic + liquidationThreshold * dystUsdpMatic * 10 ** 8);
+        aaveBorrowAndPoolMaticPercent = aaveCollateralPercent * liquidationThreshold / healthFactor;
 
-            poolUsdpPercent = aaveBorrowAndPoolMaticPercent * dystUsdpMatic * 10 ** 8 / (chainlinkUsdUsdc * chainlinkUsdMatic);
-        }
+        poolUsdpPercent = aaveBorrowAndPoolMaticPercent * dystUsdpMatic * 10 ** 8 / (chainlinkUsdUsdc * chainlinkUsdMatic);
+
+        return (
+        aaveCollateralPercent,
+        aaveBorrowAndPoolMaticPercent,
+        poolUsdpPercent
+        );
+    }
+
+
+    function makeContext(Method method, uint256 amount) public view returns (BalanceContext memory ctx){
+
+        (
+        uint256 aaveCollateralPercent,
+        uint256 aaveBorrowAndPoolMaticPercent,
+        uint256 poolUsdpPercent
+        ) = calcPercents();
+
 
         // console.log("aaveCollateralPercent", aaveCollateralPercent);
         // console.log("aaveBorrowAndPoolMaticPercent", aaveBorrowAndPoolMaticPercent);
