@@ -294,27 +294,38 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         return realHealthFactor;
     }
 
+    function priceInDystUsdpMaticPool() internal view returns (uint256){
+        // on another pools tokens order may be another and calc price in pool should changed
+        (uint256 amount0Current, uint256 amount1Current,) = dystVault.getReserves();
+        // 10^20 because of 10^18 plus additional 2 digits to be comparable to USD price from oracles
+        return amount1Current * 10 ** 20 / amount0Current;
+    }
 
     function calcPercents() internal view returns (uint256, uint256, uint256){
-        uint256 aaveCollateralPercent;
-        uint256 aaveBorrowAndPoolMaticPercent;
-        uint256 poolUsdpPercent;
 
-        uint256 chainlinkUsdUsdc = uint256(oracleUsdc.latestAnswer());
-        uint256 chainlinkUsdMatic = uint256(oracleWmatic.latestAnswer());
-        (uint256 amount0Current, uint256 amount1Current,) = dystVault.getReserves();
-        uint256 dystUsdpMatic = amount1Current * 10 ** 20 / amount0Current;
+        uint256 priceUsdcInUsd = uint256(oracleUsdc.latestAnswer());
+        uint256 priceMaticInUsd = uint256(oracleWmatic.latestAnswer());
+        uint256 priceInDystUsdpMaticPoolInUsd = priceInDystUsdpMaticPool();
 
+        console.log("----------------- calcPercents()");
+        console.log("priceUsdcInUsd                 ", priceUsdcInUsd);
+        console.log("priceMaticInUsd                ", priceMaticInUsd);
+        console.log("priceInDystUsdpMaticPoolInUsd  ", priceInDystUsdpMaticPoolInUsd);
         console.log("-----------------");
-        console.log("chainlinkUsdUsdc  ", chainlinkUsdUsdc);
-        console.log("chainlinkUsdMatic ", chainlinkUsdMatic);
-        console.log("dystUsdpMatic     ", dystUsdpMatic);
 
         //TODO: calc digits, is percent with extra 2 digits?
-        aaveCollateralPercent = (healthFactor * chainlinkUsdUsdc * chainlinkUsdMatic * 10 ** 18) / (healthFactor * chainlinkUsdUsdc * chainlinkUsdMatic + liquidationThreshold * dystUsdpMatic * 10 ** 8);
-        aaveBorrowAndPoolMaticPercent = aaveCollateralPercent * liquidationThreshold / healthFactor;
+        uint256 aaveCollateralPercent = (healthFactor * priceUsdcInUsd * priceMaticInUsd * 10 ** 18)
+        / (
+        healthFactor * priceUsdcInUsd * priceMaticInUsd +
+        liquidationThreshold * priceInDystUsdpMaticPoolInUsd * 10 ** 8
+        );
+        uint256 aaveBorrowAndPoolMaticPercent = aaveCollateralPercent * liquidationThreshold / healthFactor;
+        uint256 poolUsdpPercent = aaveBorrowAndPoolMaticPercent * priceInDystUsdpMaticPoolInUsd * 10 ** 8 / (priceUsdcInUsd * priceMaticInUsd);
 
-        poolUsdpPercent = aaveBorrowAndPoolMaticPercent * dystUsdpMatic * 10 ** 8 / (chainlinkUsdUsdc * chainlinkUsdMatic);
+        console.log("aaveCollateralPercent          ", aaveCollateralPercent);
+        console.log("aaveBorrowAndPoolMaticPercent  ", aaveBorrowAndPoolMaticPercent);
+        console.log("poolUsdpPercent                ", poolUsdpPercent);
+        console.log("-----------------");
 
         return (
         aaveCollateralPercent,
@@ -332,10 +343,6 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         uint256 poolUsdpPercent
         ) = calcPercents();
 
-
-        // console.log("aaveCollateralPercent", aaveCollateralPercent);
-        // console.log("aaveBorrowAndPoolMaticPercent", aaveBorrowAndPoolMaticPercent);
-        // console.log("poolUsdpPercent", poolUsdpPercent);
 
         (uint256 aaveCollateralUsd, uint256 aaveBorrowUsd,,,,) = aavePool().getUserAccountData(address(this));
         uint256 poolWmatic;
