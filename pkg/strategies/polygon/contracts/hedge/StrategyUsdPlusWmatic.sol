@@ -60,6 +60,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
 
     uint256 public usdcStorage;
 
+    // in e18
     uint256 public liquidationThreshold;
     uint256 public healthFactor;
     uint256 public balancingDelta;
@@ -294,6 +295,9 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         return realHealthFactor;
     }
 
+    /**
+     * Current price in dyst pool with e+2
+     */
     function priceInDystUsdpMaticPool() internal view returns (uint256){
         // on another pools tokens order may be another and calc price in pool should changed
         (uint256 amount0Current, uint256 amount1Current,) = dystVault.getReserves();
@@ -301,8 +305,12 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         return amount1Current * 10 ** 20 / amount0Current;
     }
 
-    function calcPercents() internal view returns (uint256, uint256, uint256){
+    /**
+     * Calculate needed distribution. Returns shares in e18
+     */
+    function calcDistribution() internal view returns (uint256, uint256, uint256){
 
+        // e+2
         uint256 priceUsdcInUsd = uint256(oracleUsdc.latestAnswer());
         uint256 priceMaticInUsd = uint256(oracleWmatic.latestAnswer());
         uint256 priceInDystUsdpMaticPoolInUsd = priceInDystUsdpMaticPool();
@@ -312,14 +320,23 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         console.log("priceMaticInUsd                ", priceMaticInUsd);
         console.log("priceInDystUsdpMaticPoolInUsd  ", priceInDystUsdpMaticPoolInUsd);
         console.log("-----------------");
+        console.log("healthFactor                   ", healthFactor);
+        console.log("liquidationThreshold           ", liquidationThreshold);
+        console.log("-----------------");
 
         //TODO: calc digits, is percent with extra 2 digits?
+        // 18 + 8 + 8 + 18 => 52
+        // 18 + 8 + 8 => 34
+        // 18 + 8 + 8 = 34
+        // 52 - 34 = 18
         uint256 aaveCollateralPercent = (healthFactor * priceUsdcInUsd * priceMaticInUsd * 10 ** 18)
         / (
         healthFactor * priceUsdcInUsd * priceMaticInUsd +
         liquidationThreshold * priceInDystUsdpMaticPoolInUsd * 10 ** 8
         );
+        // 18 + 18 - 18 = 18
         uint256 aaveBorrowAndPoolMaticPercent = aaveCollateralPercent * liquidationThreshold / healthFactor;
+        // 18 + 8 + 8 - 8 - 8 = 18
         uint256 poolUsdpPercent = aaveBorrowAndPoolMaticPercent * priceInDystUsdpMaticPoolInUsd * 10 ** 8 / (priceUsdcInUsd * priceMaticInUsd);
 
         console.log("aaveCollateralPercent          ", aaveCollateralPercent);
@@ -334,36 +351,72 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         );
     }
 
+    /**
+     * Get current liquidity in USD e6+2
+     */
+    function currentLiquidity() internal view returns (uint256, uint256, uint256, uint256){
 
-    function makeContext(Method method, uint256 amount) public view returns (BalanceContext memory ctx){
+        (uint256 poolWmatic,  uint256 poolUsdPlus) = this._getLiquidity();
+
+        uint256 poolMaticUsd = AaveBorrowLibrary.convertTokenAmountToUsd(poolWmatic, wmaticDm, uint256(oracleWmatic.latestAnswer()));
+        uint256 poolUsdpUsd = AaveBorrowLibrary.convertTokenAmountToUsd(poolUsdPlus, usdcDm, uint256(oracleUsdc.latestAnswer()));
+
+        // E6+2
+        (uint256 aaveCollateralUsd, uint256 aaveBorrowUsd,,,,) = aavePool().getUserAccountData(address(this));
+
+        console.log("----------------- currentLiquidity()");
+        console.log("aaveCollateralUsd ", aaveCollateralUsd);
+        console.log("aaveBorrowUsd     ", aaveBorrowUsd);
+        console.log("poolMaticUsd      ", poolMaticUsd);
+        console.log("poolUsdpUsd       ", poolUsdpUsd);
+        console.log("-----------------");
+
+        return (
+        aaveCollateralUsd,
+        aaveBorrowUsd,
+        poolMaticUsd,
+        poolUsdpUsd
+        );
+    }
+
+    /**
+     * Get expected liquidity distribution in USD e+2
+     */
+    function expectedLiquidity(uint256 nav) internal view returns (uint256, uint256, uint256){
 
         (
         uint256 aaveCollateralPercent,
         uint256 aaveBorrowAndPoolMaticPercent,
         uint256 poolUsdpPercent
-        ) = calcPercents();
+        ) = calcDistribution();
 
-
-        (uint256 aaveCollateralUsd, uint256 aaveBorrowUsd,,,,) = aavePool().getUserAccountData(address(this));
-        uint256 poolWmatic;
-        uint256 poolUsdPlus;
-
-        //TODO: extract to method
-        {
-            address userProxyThis = penLens.userProxyByAccount(address(this));
-            address stakingAddress = penLens.stakingRewardsByDystPool(address(dystVault));
-            uint256 balanceLp = IERC20(stakingAddress).balanceOf(userProxyThis);
-            (poolWmatic, poolUsdPlus) = this._getLiquidityByLp(balanceLp);
-        }
-
-        uint256 poolMaticUsd = AaveBorrowLibrary.convertTokenAmountToUsd(poolWmatic, wmaticDm, uint256(oracleWmatic.latestAnswer()));
-        uint256 poolUsdpUsd = AaveBorrowLibrary.convertTokenAmountToUsd(poolUsdPlus, usdcDm, uint256(oracleUsdc.latestAnswer()));
+        uint256 __poolUsdpNew = nav * poolUsdpPercent / 10 ** 18;
+        uint256 __aaveBorrowAndPoolMaticNew = nav * aaveBorrowAndPoolMaticPercent / 10 ** 18;
+        uint256 __aaveCollateralNew = nav * aaveCollateralPercent / 10 ** 18;
 
         console.log("-----------------");
-        console.log("aaveCollateralUsd ", aaveCollateralUsd);
-        console.log("aaveBorrowUsd     ", aaveBorrowUsd);
-        console.log("poolMaticUsd      ", poolMaticUsd);
-        console.log("poolUsdpUsd       ", poolUsdpUsd);
+        console.log("aaveCollateralUsdNeeded ", __aaveCollateralNew);
+        console.log("aaveBorrowUsdNeeded     ", __aaveBorrowAndPoolMaticNew);
+        console.log("poolMaticUsdNeeded      ", __aaveBorrowAndPoolMaticNew);
+        console.log("poolUsdpUsdNeeded       ", __poolUsdpNew);
+        console.log("-----------------");
+
+        return (
+        __aaveCollateralNew,
+        __aaveBorrowAndPoolMaticNew,
+        __poolUsdpNew
+        );
+    }
+
+
+    function makeContext(Method method, uint256 amount) public view returns (BalanceContext memory ctx){
+
+        (
+        uint256 aaveCollateralUsd,
+        uint256 aaveBorrowUsd,
+        uint256 poolMaticUsd,
+        uint256 poolUsdpUsd
+        ) = currentLiquidity();
 
         uint256 NAV = poolMaticUsd + poolUsdpUsd + aaveCollateralUsd - aaveBorrowUsd;
 
@@ -376,6 +429,12 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         }
         console.log("NAV              ", NAV);
 
+        (
+        uint256 __aaveCollateralNew,
+        uint256 __aaveBorrowAndPoolMaticNew,
+        uint256 __poolUsdpNew
+        ) = expectedLiquidity(NAV);
+
         // prepare context variable
         ctx = BalanceContext(
             0,
@@ -385,17 +444,6 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
             method,
             amount
         );
-
-        uint256 __poolUsdpNew = NAV * poolUsdpPercent / 10 ** 18;
-        uint256 __aaveBorrowAndPoolMaticNew = NAV * aaveBorrowAndPoolMaticPercent / 10 ** 18;
-        uint256 __aaveCollateralNew = NAV * aaveCollateralPercent / 10 ** 18;
-
-        console.log("-----------------");
-        console.log("aaveCollateralUsdNeeded ", __aaveCollateralNew);
-        console.log("aaveBorrowUsdNeeded     ", __aaveBorrowAndPoolMaticNew);
-        console.log("poolMaticUsdNeeded      ", __aaveBorrowAndPoolMaticNew);
-        console.log("poolUsdpUsdNeeded       ", __poolUsdpNew);
-        console.log("-----------------");
 
         // set cases and deltas
         if (aaveCollateralUsd > __aaveCollateralNew) {

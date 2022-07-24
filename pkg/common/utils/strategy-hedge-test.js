@@ -126,6 +126,9 @@ function stakeUnstake(strategyParams, network, assetAddress, values, runStrategy
                 sharedBeforeEach(`Stake ${stakeValue}`, async () => {
 
                     try {
+                        let balances = await strategy.balances();
+                        console.log(`balances before:\n${JSON.stringify(balances, null, 2)}`)
+
                         let assetValue = toAsset(stakeValue);
                         VALUE = new BigNumber(assetValue);
                         DELTA = VALUE.multipliedBy(new BigNumber(deltaPercent)).div(100);
@@ -141,10 +144,15 @@ function stakeUnstake(strategyParams, network, assetAddress, values, runStrategy
                         let balanceAssetAfter = new BigNumber((await asset.balanceOf(recipient.address)).toString());
 
                         balanceAsset = balanceAssetBefore.minus(balanceAssetAfter);
+                        console.log(`----------------------`)
                         console.log(`balanceAssetAfter: ${balanceAssetAfter}`)
                         console.log(`balanceAsset: ${balanceAsset}`)
-                        netAssetValueCheck = new BigNumber((await strategy.netAssetValue()).toString());
                         console.log(`netAssetValueCheck: ${netAssetValueCheck}`)
+                        console.log(`----------------------`)
+                        netAssetValueCheck = new BigNumber((await strategy.netAssetValue()).toString());
+
+                        balances = await strategy.balances();
+                        console.log(`balances after:\n${JSON.stringify(balances, null, 2)}`)
                     } catch (e) {
                         console.log(e)
                         throw e;

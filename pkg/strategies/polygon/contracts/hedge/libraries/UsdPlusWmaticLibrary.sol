@@ -114,6 +114,9 @@ library UsdPlusWmaticLibrary {
         return amount0;
     }
 
+    /**
+     * Own liquidity in pool in their native digits.
+     */
     function _getLiquidity(StrategyUsdPlusWmatic self) public view returns (uint256, uint256){
 
         address userProxyThis = self.penLens().userProxyByAccount(address(self));
