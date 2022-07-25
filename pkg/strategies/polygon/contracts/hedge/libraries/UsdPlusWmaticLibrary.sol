@@ -19,7 +19,7 @@ library UsdPlusWmaticLibrary {
      */
     function _addLiquidity(StrategyUsdPlusWmatic self, uint256 wmaticAmount, uint256 usdPlusAmount) public {
 
-        self.usdPlus().approve(address(self.dystRouter()), type(uint256).max);
+        self.usdPlus().approve(address(self.dystRouter()), usdPlusAmount);
         self.wmatic().approve(address(self.dystRouter()), wmaticAmount);
 
         self.dystRouter().addLiquidity(
@@ -28,8 +28,8 @@ library UsdPlusWmaticLibrary {
             false,
             wmaticAmount,
             usdPlusAmount,
-            (wmaticAmount < 10000) ? 0 : (OvnMath.subBasisPoints(wmaticAmount, self.BASIS_POINTS_FOR_SLIPPAGE())),
-            (usdPlusAmount < 10000) ? 0 : (OvnMath.subBasisPoints(usdPlusAmount, self.BASIS_POINTS_FOR_SLIPPAGE())),
+            0,
+            0,
             address(self),
             block.timestamp + 600
         );
@@ -172,7 +172,7 @@ library UsdPlusWmaticLibrary {
         (uint256 amount0Current, uint256 amount1Current,) = self.dystVault().getReserves();
 
         uint256 allowedAmount = usdPlus.balanceOf(address(self)) - (ctx.method == StrategyUsdPlusWmatic.Method.UNSTAKE ? ctx.amount : 0);
-        console.log("allowedAmount", allowedAmount);
+        console.log("allowedAmount     ", allowedAmount);
         uint256 amountUsdcToSwap = _getAmountToken0(
             self,
             allowedAmount,
@@ -184,7 +184,7 @@ library UsdPlusWmaticLibrary {
             address(usdPlus),
             address(wmatic)
         );
-
+        console.log("amountUsdcToSwap  ", amountUsdcToSwap);
         DystopiaLibrary._swap(
             self.dystRouter(),
             address(usdPlus),
@@ -195,7 +195,8 @@ library UsdPlusWmaticLibrary {
 
         uint256 usdPlusAmount = usdPlus.balanceOf(address(self)) - (ctx.method == StrategyUsdPlusWmatic.Method.UNSTAKE ? ctx.amount : 0);
         uint256 wmaticAmount = wmatic.balanceOf(address(self));
-
+        console.log("usdPlusAmount     ", usdPlusAmount);
+        console.log("wmaticAmount      ", wmaticAmount);
         _addLiquidity(self, wmaticAmount, usdPlusAmount);
     }
 
@@ -255,6 +256,7 @@ library UsdPlusWmaticLibrary {
      * usdc -> aUsdc
      */
     function _supplyCurrentUsdcAmount(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.BalanceContext  memory ctx, uint256 amount) public {
+        console.log("_supplyCurrentUsdcAmount usdc -> aUsdc", amount);
         self.usdc().approve(address(self.aavePool()), amount);
         self.aavePool().supply(address(self.usdc()), amount, address(this), self.REFERRAL_CODE());
     }
@@ -269,7 +271,7 @@ library UsdPlusWmaticLibrary {
 
         // calc amount
         uint256 borrowWMaticAmount = AaveBorrowLibrary.convertUsdToTokenAmount(
-            ctx.aaveBorrowUsdNeeded,
+            ctx.aaveBorrowUsdNeeded * 100,
             self.wmaticDm(),
             uint256(self.oracleWmatic().latestAnswer())
         );
@@ -402,12 +404,11 @@ library UsdPlusWmaticLibrary {
     function _caseNumber6(StrategyUsdPlusWmatic self, StrategyUsdPlusWmatic.BalanceContext  memory ctx) public {
 
         // 1. usd+ -> usdc
-        //TODO: why aaveCollateralUsdNeeded divided by 100?
         _swapUspPlusToToken(
             self,
             ctx,
             address(self.usdc()),
-            ctx.aaveCollateralUsdNeeded / 100,
+            ctx.aaveCollateralUsdNeeded,
             true
         );
         // usdc -> aUsdc

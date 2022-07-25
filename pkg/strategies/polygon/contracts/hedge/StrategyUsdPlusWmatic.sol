@@ -193,6 +193,9 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         }
 
         (,,,,, realHealthFactor) = aavePool().getUserAccountData(address(this));
+
+        console.log("realHealthFactor", realHealthFactor);
+
     }
 
     function aavePool() public view returns (IPool){
@@ -209,10 +212,10 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         // debt base (USD) convert to Wmatic amount
         (, uint256 debtBase,,,,) = aavePool().getUserAccountData(address(this));
         uint256 aaveWmatic = AaveBorrowLibrary.convertUsdToTokenAmount(debtBase, wmaticDm, uint256(oracleWmatic.latestAnswer()));
-        uint256 usdcWmatic = AaveBorrowLibrary.convertUsdToTokenAmount(debtBase, usdcDm, uint256(oracleUsdc.latestAnswer()));
+        uint256 aaveWmaticInUsdc = AaveBorrowLibrary.convertUsdToTokenAmount(debtBase, usdcDm, uint256(oracleUsdc.latestAnswer()));
 
         BalanceItem[] memory items = new BalanceItem[](4);
-        items[0] = BalanceItem(address(wmatic), usdcWmatic, aaveWmatic, true);
+        items[0] = BalanceItem(address(wmatic), aaveWmaticInUsdc, aaveWmatic, true);
 
         uint256 amountAusdc = aUsdc.balanceOf(address(this)) + usdc.balanceOf(address(this));
         items[1] = BalanceItem(address(aUsdc), amountAusdc, amountAusdc, false);
@@ -221,7 +224,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
 
         poolUsdPlus += usdPlus.balanceOf(address(this));
 
-        usdcWmatic = AaveBorrowLibrary.convertTokenAmountToTokenAmount(
+        uint256 poolWmaticInUsdc = AaveBorrowLibrary.convertTokenAmountToTokenAmount(
             poolWmatic,
             wmaticDm,
             usdcDm,
@@ -229,7 +232,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
             uint256(oracleUsdc.latestAnswer())
         );
 
-        items[2] = BalanceItem(address(wmatic), usdcWmatic, poolWmatic, false);
+        items[2] = BalanceItem(address(wmatic), poolWmaticInUsdc, poolWmatic, false);
         items[3] = BalanceItem(address(usdPlus), poolUsdPlus, poolUsdPlus, false);
 
         return items;
@@ -270,11 +273,44 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         }
 
         return totalUsdPlus + totalUsdc;
+
+        // TODO: back later to choose right way
+//        (
+//        uint256 aaveCollateralUsdc,
+//        uint256 aaveBorrowUsdc,
+//        uint256 poolMaticUsdc,
+//        uint256 poolUsdpUsdc
+//        ) = currentLiquidity();
+//
+//        uint256 NAV = poolMaticUsdc + poolUsdpUsdc + aaveCollateralUsdc - aaveBorrowUsdc;
+//
+//        uint256 usdPlusBalance = usdPlus.balanceOf(address(this));
+//        uint256 usdcBalance = usdc.balanceOf(address(this));
+//        uint256 aUsdcBalance = aUsdc.balanceOf(address(this));
+//        uint256 wmaticBalance = wmatic.balanceOf(address(this));
+//
+//        uint256 wmaticBalanceUsd = AaveBorrowLibrary.convertTokenAmountToUsd(wmaticBalance, wmaticDm, uint256(oracleWmatic.latestAnswer()));
+//        uint256 wmaticBalanceUsdc = wmaticBalanceUsd / 100;
+//
+//
+//        console.log("----------------- netAssetValue");
+//        console.log("usdPlusBalance       ", usdPlusBalance);
+//        console.log("usdcBalance          ", usdcBalance);
+//        console.log("aUsdcBalance         ", aUsdcBalance);
+//        console.log("wmaticBalance        ", wmaticBalance);
+//        console.log("wmaticBalanceUsdc    ", wmaticBalanceUsdc);
+//        console.log("aaveCollateralUsdc   ", aaveCollateralUsdc);
+//        console.log("aaveBorrowUsdc       ", aaveBorrowUsdc);
+//        console.log("poolMaticUsdc        ", poolMaticUsdc);
+//        console.log("poolUsdpUsdc         ", poolUsdpUsdc);
+//        console.log("-----------------");
+//        return NAV + usdPlusBalance + usdcBalance + wmaticBalanceUsdc;
+
     }
 
 
     function _claimRewards(address _to) internal override returns (uint256){
-        //FIXME: recursion
+        //FIXME: recursion? rename method in lib
         return this.claimRewards();
     }
 
@@ -352,7 +388,7 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     }
 
     /**
-     * Get current liquidity in USD e6+2
+     * Get current liquidity in USDC e6
      */
     function currentLiquidity() internal view returns (uint256, uint256, uint256, uint256){
 
@@ -371,11 +407,13 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         console.log("poolUsdpUsd       ", poolUsdpUsd);
         console.log("-----------------");
 
+        //TODO: add free wmatic calc amount
+
         return (
-        aaveCollateralUsd,
-        aaveBorrowUsd,
-        poolMaticUsd,
-        poolUsdpUsd
+        aaveCollateralUsd / 100,
+        aaveBorrowUsd / 100,
+        poolMaticUsd / 100,
+        poolUsdpUsd / 100
         );
     }
 
@@ -412,13 +450,13 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
     function makeContext(Method method, uint256 amount) public view returns (BalanceContext memory ctx){
 
         (
-        uint256 aaveCollateralUsd,
-        uint256 aaveBorrowUsd,
-        uint256 poolMaticUsd,
-        uint256 poolUsdpUsd
+        uint256 aaveCollateralUsdc,
+        uint256 aaveBorrowUsdc,
+        uint256 poolMaticUsdc,
+        uint256 poolUsdpUsdc
         ) = currentLiquidity();
 
-        uint256 NAV = poolMaticUsd + poolUsdpUsd + aaveCollateralUsd - aaveBorrowUsd;
+        uint256 NAV = poolMaticUsdc + poolUsdpUsdc + aaveCollateralUsdc - aaveBorrowUsdc;
 
         // correct NAV by stake/unstake amount
         if (method == Method.STAKE) {
@@ -446,50 +484,50 @@ contract StrategyUsdPlusWmatic is HedgeStrategy {
         );
 
         // set cases and deltas
-        if (aaveCollateralUsd > __aaveCollateralNew) {
-            if (aaveBorrowUsd > __aaveBorrowAndPoolMaticNew) {
-                if (poolUsdpUsd > __poolUsdpNew) {
+        if (aaveCollateralUsdc > __aaveCollateralNew) {
+            if (aaveBorrowUsdc > __aaveBorrowAndPoolMaticNew) {
+                if (poolUsdpUsdc > __poolUsdpNew) {
                     ctx.caseNumber = 1;
-                    ctx.poolUsdpUsdDelta = poolUsdpUsd - __poolUsdpNew;
-                    ctx.aaveBorrowUsdNeeded = aaveBorrowUsd - __aaveBorrowAndPoolMaticNew;
-                    ctx.aaveCollateralUsdNeeded = aaveCollateralUsd - __aaveCollateralNew;
+                    ctx.poolUsdpUsdDelta = poolUsdpUsdc - __poolUsdpNew;
+                    ctx.aaveBorrowUsdNeeded = aaveBorrowUsdc - __aaveBorrowAndPoolMaticNew;
+                    ctx.aaveCollateralUsdNeeded = aaveCollateralUsdc - __aaveCollateralNew;
                 } else {
                     ctx.caseNumber = 2;
-                    ctx.poolUsdpUsdDelta = __poolUsdpNew - poolUsdpUsd;
-                    ctx.aaveBorrowUsdNeeded = aaveBorrowUsd - __aaveBorrowAndPoolMaticNew;
-                    ctx.aaveCollateralUsdNeeded = aaveCollateralUsd - __aaveCollateralNew;
+                    ctx.poolUsdpUsdDelta = __poolUsdpNew - poolUsdpUsdc;
+                    ctx.aaveBorrowUsdNeeded = aaveBorrowUsdc - __aaveBorrowAndPoolMaticNew;
+                    ctx.aaveCollateralUsdNeeded = aaveCollateralUsdc - __aaveCollateralNew;
                 }
             } else {
-                if (poolUsdpUsd > __poolUsdpNew) {
+                if (poolUsdpUsdc > __poolUsdpNew) {
                     revert("Unpredictable case -1");
                 } else {
                     ctx.caseNumber = 1;
-                    ctx.poolUsdpUsdDelta = __poolUsdpNew - poolUsdpUsd;
-                    ctx.aaveBorrowUsdNeeded = __aaveBorrowAndPoolMaticNew - aaveBorrowUsd;
-                    ctx.aaveCollateralUsdNeeded = aaveCollateralUsd - __aaveCollateralNew;
+                    ctx.poolUsdpUsdDelta = __poolUsdpNew - poolUsdpUsdc;
+                    ctx.aaveBorrowUsdNeeded = __aaveBorrowAndPoolMaticNew - aaveBorrowUsdc;
+                    ctx.aaveCollateralUsdNeeded = aaveCollateralUsdc - __aaveCollateralNew;
                 }
             }
         } else {
-            if (aaveBorrowUsd > __aaveBorrowAndPoolMaticNew) {
-                if (poolUsdpUsd > __poolUsdpNew) {
+            if (aaveBorrowUsdc > __aaveBorrowAndPoolMaticNew) {
+                if (poolUsdpUsdc > __poolUsdpNew) {
                     ctx.caseNumber = 4;
-                    ctx.poolUsdpUsdDelta = poolUsdpUsd - __poolUsdpNew;
-                    ctx.aaveBorrowUsdNeeded = aaveBorrowUsd - __aaveBorrowAndPoolMaticNew;
-                    ctx.aaveCollateralUsdNeeded = __aaveCollateralNew - aaveCollateralUsd;
+                    ctx.poolUsdpUsdDelta = poolUsdpUsdc - __poolUsdpNew;
+                    ctx.aaveBorrowUsdNeeded = aaveBorrowUsdc - __aaveBorrowAndPoolMaticNew;
+                    ctx.aaveCollateralUsdNeeded = __aaveCollateralNew - aaveCollateralUsdc;
                 } else {
                     revert("Unpredictable case -2");
                 }
             } else {
-                if (poolUsdpUsd > __poolUsdpNew) {
+                if (poolUsdpUsdc > __poolUsdpNew) {
                     ctx.caseNumber = 5;
-                    ctx.poolUsdpUsdDelta = poolUsdpUsd - __poolUsdpNew;
-                    ctx.aaveBorrowUsdNeeded = __aaveBorrowAndPoolMaticNew - aaveBorrowUsd;
-                    ctx.aaveCollateralUsdNeeded = __aaveCollateralNew - aaveCollateralUsd;
+                    ctx.poolUsdpUsdDelta = poolUsdpUsdc - __poolUsdpNew;
+                    ctx.aaveBorrowUsdNeeded = __aaveBorrowAndPoolMaticNew - aaveBorrowUsdc;
+                    ctx.aaveCollateralUsdNeeded = __aaveCollateralNew - aaveCollateralUsdc;
                 } else {
                     ctx.caseNumber = 6;
-                    ctx.poolUsdpUsdDelta = __poolUsdpNew - poolUsdpUsd;
-                    ctx.aaveBorrowUsdNeeded = __aaveBorrowAndPoolMaticNew - aaveBorrowUsd;
-                    ctx.aaveCollateralUsdNeeded = __aaveCollateralNew - aaveCollateralUsd;
+                    ctx.poolUsdpUsdDelta = __poolUsdpNew - poolUsdpUsdc;
+                    ctx.aaveBorrowUsdNeeded = __aaveBorrowAndPoolMaticNew - aaveBorrowUsdc;
+                    ctx.aaveCollateralUsdNeeded = __aaveCollateralNew - aaveCollateralUsdc;
                 }
             }
         }

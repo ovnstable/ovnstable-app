@@ -3,7 +3,7 @@ const {deployments, getNamedAccounts, ethers} = require("hardhat");
 const {resetHardhat} = require("./tests");
 const ERC20 = require("./abi/IERC20.json");
 const {logStrategyGasUsage} = require("./strategyCommon");
-const {toE6, toE18} = require("./decimals");
+const {toE6, toE18, fromUSDC, fromE18} = require("./decimals");
 const {expect} = require("chai");
 const {evmCheckpoint, evmRestore, sharedBeforeEach} = require("./sharedBeforeEach");
 const BigNumber = require('bignumber.js');
@@ -13,7 +13,7 @@ chai.use(require('chai-bignumber')());
 const {waffle} = require("hardhat");
 const {getContract, execTimelock} = require("@overnight-contracts/common/utils/script-utils");
 const {toUSDC} = require("@overnight-contracts/common/utils/decimals");
-const {transferETH, transferUSDPlus} = require("./script-utils");
+const {transferETH, transferUSDPlus, showHedgeM2M} = require("./script-utils");
 const {provider} = waffle;
 
 
@@ -126,8 +126,10 @@ function stakeUnstake(strategyParams, network, assetAddress, values, runStrategy
                 sharedBeforeEach(`Stake ${stakeValue}`, async () => {
 
                     try {
-                        let balances = await strategy.balances();
-                        console.log(`balances before:\n${JSON.stringify(balances, null, 2)}`)
+                        // let balances = await strategy.balances();
+                        // console.log(`balances before:\n${JSON.stringify(balances, null, 2)}`)
+
+                        await m2m(strategy);
 
                         let assetValue = toAsset(stakeValue);
                         VALUE = new BigNumber(assetValue);
@@ -151,8 +153,9 @@ function stakeUnstake(strategyParams, network, assetAddress, values, runStrategy
                         console.log(`----------------------`)
                         netAssetValueCheck = new BigNumber((await strategy.netAssetValue()).toString());
 
-                        balances = await strategy.balances();
-                        console.log(`balances after:\n${JSON.stringify(balances, null, 2)}`)
+                        // balances = await strategy.balances();
+                        // console.log(`balances after:\n${JSON.stringify(balances, null, 2)}`)
+                        await m2m(strategy);
                     } catch (e) {
                         console.log(e)
                         throw e;
@@ -169,53 +172,53 @@ function stakeUnstake(strategyParams, network, assetAddress, values, runStrategy
                 });
 
 
-                describe(`UnStake ${unstakeValue}`, function () {
-
-                    let balanceAsset;
-                    let expectedNetAsset;
-                    let expectedLiquidation;
-
-                    let VALUE;
-                    let DELTA;
-
-                    let netAssetValueCheck;
-                    // let liquidationValueCheck;
-
-                    sharedBeforeEach(`Unstake ${unstakeValue}`, async () => {
-
-                        let assetValue = toAsset(unstakeValue);
-                        VALUE = new BigNumber(assetValue);
-                        DELTA = VALUE.times(new BigNumber(deltaPercent)).div(100);
-
-                        let balanceAssetBefore = new BigNumber((await asset.balanceOf(recipient.address)).toString());
-
-                        expectedNetAsset = new BigNumber((await strategy.netAssetValue()).toString()).minus(VALUE);
-                        // expectedLiquidation = new BigNumber((await strategy.liquidationValue()).toString()).minus(VALUE);
-
-                        await strategy.connect(recipient).unstake( assetValue, recipient.address);
-
-                        let balanceAssetAfter = new BigNumber((await asset.balanceOf(recipient.address)).toString());
-
-                        balanceAsset = balanceAssetAfter.minus(balanceAssetBefore);
-
-                        netAssetValueCheck = new BigNumber((await strategy.netAssetValue()).toString());
-                        // liquidationValueCheck = new BigNumber((await strategy.liquidationValue()).toString());
-
-                    });
-
-                    it(`Balance asset is in range`, async function () {
-                        greatLess(balanceAsset, VALUE, DELTA);
-                    });
-
-                    it(`NetAssetValue asset is in range`, async function () {
-                        greatLess(netAssetValueCheck, expectedNetAsset, DELTA);
-                    });
-
-                    // it(`LiquidationValue asset is in range`, async function () {
-                    //     greatLess(liquidationValueCheck, expectedLiquidation, DELTA);
-                    // });
-
-                });
+                // describe(`UnStake ${unstakeValue}`, function () {
+                //
+                //     let balanceAsset;
+                //     let expectedNetAsset;
+                //     let expectedLiquidation;
+                //
+                //     let VALUE;
+                //     let DELTA;
+                //
+                //     let netAssetValueCheck;
+                //     // let liquidationValueCheck;
+                //
+                //     sharedBeforeEach(`Unstake ${unstakeValue}`, async () => {
+                //
+                //         let assetValue = toAsset(unstakeValue);
+                //         VALUE = new BigNumber(assetValue);
+                //         DELTA = VALUE.times(new BigNumber(deltaPercent)).div(100);
+                //
+                //         let balanceAssetBefore = new BigNumber((await asset.balanceOf(recipient.address)).toString());
+                //
+                //         expectedNetAsset = new BigNumber((await strategy.netAssetValue()).toString()).minus(VALUE);
+                //         // expectedLiquidation = new BigNumber((await strategy.liquidationValue()).toString()).minus(VALUE);
+                //
+                //         await strategy.connect(recipient).unstake( assetValue, recipient.address);
+                //
+                //         let balanceAssetAfter = new BigNumber((await asset.balanceOf(recipient.address)).toString());
+                //
+                //         balanceAsset = balanceAssetAfter.minus(balanceAssetBefore);
+                //
+                //         netAssetValueCheck = new BigNumber((await strategy.netAssetValue()).toString());
+                //         // liquidationValueCheck = new BigNumber((await strategy.liquidationValue()).toString());
+                //
+                //     });
+                //
+                //     it(`Balance asset is in range`, async function () {
+                //         greatLess(balanceAsset, VALUE, DELTA);
+                //     });
+                //
+                //     it(`NetAssetValue asset is in range`, async function () {
+                //         greatLess(netAssetValueCheck, expectedNetAsset, DELTA);
+                //     });
+                //
+                //     // it(`LiquidationValue asset is in range`, async function () {
+                //     //     greatLess(liquidationValueCheck, expectedLiquidation, DELTA);
+                //     // });
+                //
+                // });
 
             });
 
@@ -306,6 +309,35 @@ function claimRewards(strategyParams, network, assetAddress, values, runStrategy
     });
 }
 
+
+async function m2m(strategy){
+    console.log('ETS:')
+
+    let values = [];
+    values.push({name: 'Total NAV', value: fromUSDC(await strategy.netAssetValue())});
+    values.push({name: 'HF', value: (await strategy.currentHealthFactor()).toString()});
+
+    console.table(values);
+
+
+    let items = await strategy.balances();
+
+    let arrays = [];
+    for (let i = 0; i < items.length; i++) {
+
+        let item = items[i];
+
+        arrays.push({
+            name: item[0],
+            amountUSDC: fromUSDC(item[1].toString()),
+            amount: fromE18(item[2].toString()),
+            borrowed: item[3].toString()
+        })
+
+    }
+
+    console.table(arrays);
+}
 
 function greatLess(value, expected, delta) {
 
